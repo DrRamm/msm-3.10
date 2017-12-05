@@ -11,7 +11,7 @@
  */
 
 /dts-v1/;
-
+/memreserve/ 0x7f200000 0x100000;
 #include "msm8974pro-ab-pm8941.dtsi"
 #include "msm8974-cdp.dtsi"
 

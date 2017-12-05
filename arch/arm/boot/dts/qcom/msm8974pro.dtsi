@@ -31,7 +31,7 @@
 			linux,reserve-contiguous-region;
 			linux,reserve-region;
 			linux,remove-completely;
-			reg = <0x5a00000 0x2100000>;
+			reg = <0x5500000 0x2600000>;
 			label = "peripheral_mem";
 		};
 
@@ -1652,10 +1652,6 @@
 		linux,contiguous-region = <&alt_peripheral_mem>;
 	};
 
-	qcom,mss@fc880000 {
-		linux,contiguous-region = <&modem_mem>;
-	};
-
 	qcom,venus@fdce0000 {
 		linux,contiguous-region = <&alt_peripheral_mem>;
 	};
@@ -1670,7 +1666,6 @@
 	/* Updated chip ID */
 	qcom,chipid = <0x03030002>;
 	qcom,msm-bus,num-cases = <14>;
-	qcom,bus-control;
 	qcom,initial-pwrlevel = <3>;
 
 	/* Updated bus bandwidth requirements */
@@ -1908,6 +1903,8 @@
 
 &gdsc_venus {
 	qcom,skip-logic-collapse;
+    qcom,retain-periph;
+    qcom,retain-mem;
 };
 
 &sdhc_1 {
