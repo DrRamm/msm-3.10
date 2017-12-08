@@ -11,8 +11,9 @@
  */
 
 #include "skeleton.dtsi"
-#include </home/ar4er/msm-3.10/include/dt-bindings/clock/msm-clocks-8974.h>
-#include </home/ar4er/msm-3.10/include/dt-bindings/clock/msm-clocks-krait.h>
+#include <dt-bindings/clock/msm-clocks-8974.h>
+#include <dt-bindings/clock/msm-clocks-krait.h>
+
 / {
 	model = "Qualcomm Technologies, Inc. MSM 8974";
 	compatible = "qcom,msm8974";
@@ -142,7 +143,7 @@
 
 		adsp_mem: adsp_region@0 {
 			linux,reserve-contiguous-region;
-			reg = <0 0x3F00000>;
+			reg = <0 0x4100000>;
 			label = "adsp_mem";
 		};
 
@@ -1001,7 +1002,7 @@
 		qcom,bam-consumer-pipe-index = <12>;
 		qcom,bam-producer-pipe-index = <13>;
 		qcom,master-id = <86>;
-        status = "ok";
+        status = "disabled";
 	};
 
 	clock_krait: qcom,clock-krait@f9016000 {
@@ -1786,6 +1787,10 @@
 		qcom,msm-bus,vectors-KBps =
 				<61 512 0 0>,
 				<61 512 240000 960000>;
+		qcom,usbin-vadc = <0x98>;
+		qcom,utmi-clk-rate = <0x16e3600>;
+		linux,phandle = <0xaf>;
+		phandle = <0xaf>;
 		dwc3@f9200000 {
 			compatible = "synopsys,dwc3";
 			reg = <0xf9200000 0xfc000>;
@@ -1793,6 +1798,7 @@
 			interrupts = <0 131 0>;
 			usb-phy = <&hsphy>, <&ssphy>;
 			tx-fifo-resize;
+			snps,usb3-u1u2-disable;
 		};
 	};
 
@@ -1842,16 +1848,18 @@
 			 <&clock_gcc clk_gcc_usb2b_phy_sleep_clk>,
 			 <&clock_rpm clk_cxo_ehci_host_clk>;
 		clock-names = "core_clk", "iface_clk", "sleep_clk", "xo";
+		hsusb_vdd_dig-supply = <0x2b>;
+		qcom,vdd-voltage-level = <0x1 0x2 0x3 0x5 0x7>;
+		qcom,usb2-enable-uicc;
 	};
 
-	/*gdsc_oxili_gx: qcom,gdsc@fd8c4024 {
+	gdsc_oxili_gx: qcom,gdsc@fd8c4024 {
 		parent-supply = <&pm8841_s4_corner>;
-	};*/
+	};
 
 	qcom,lpass@fe200000 {
 		compatible = "qcom,pil-tz-generic";
 		reg = <0xfe200000 0x00100>;
-
 		interrupts = <0 162 1>;
 
 		vdd_cx-supply = <&pm8841_s2_corner>;
@@ -1864,9 +1872,11 @@
 			 <&clock_gcc clk_gcc_ce1_ahb_clk>,
 			 <&clock_gcc clk_gcc_ce1_axi_clk>,
 			 <&clock_gcc clk_ce1_clk_src>;
-		clock-names = "bus_clk", "xo", "scm_core_clk", "scm_iface_clk", "scm_bus_clk", "scm_core_clk_src";
+		clock-names = "bus_clk", "xo", "scm_core_clk", "scm_iface_clk",
+				"scm_bus_clk", "scm_core_clk_src";
 		qcom,active-clock-names = "bus_clk";
-		qcom,proxy-clock-names = "xo", "scm_core_clk", "scm_iface_clk", "scm_bus_clk", "scm_core_clk_src";
+		qcom,proxy-clock-names = "xo", "scm_core_clk", "scm_iface_clk",
+					"scm_bus_clk", "scm_core_clk_src";
 		qcom,scm_core_clk_src-freq = <50000000>;
 
 		qcom,pas-id = <1>;
@@ -2159,11 +2169,13 @@ dai_mi2s: qcom,msm-dai-q6-mi2s-quat {
 		      <0xfc401680 0x004>;
 		reg-names = "qdsp6_base", "halt_base", "rmb_base",
 			    "restart_reg";
+
 		clock-names = "xo", "iface_clk", "bus_clk", "mem_clk";
 		clocks = <&clock_rpm clk_cxo_pil_mss_clk>,
 			 <&clock_gcc clk_gcc_mss_cfg_ahb_clk>,
 			 <&clock_gcc clk_gcc_mss_q6_bimc_axi_clk>,
-<&clock_gcc clk_gcc_boot_rom_ahb_clk>;
+			 <&clock_gcc clk_gcc_boot_rom_ahb_clk>;
+
 		interrupts = <0 24 1>;
 		vdd_mss-supply = <&pm8841_s3>;
 		vdd_cx-supply = <&pm8841_s2_corner>;
@@ -2198,6 +2210,11 @@ dai_mi2s: qcom,msm-dai-q6-mi2s-quat {
 		vdd_pronto_pll-supply = <&pm8941_l12>;
 		qcom,proxy-reg-names = "vdd_pronto_pll";
 		qcom,vdd_pronto_pll-uV-uA = <1800000 18000>;
+		clocks = <&clock_rpm clk_cxo_pil_pronto_clk>,
+			 <&clock_gcc clk_gcc_ce1_clk>,
+			 <&clock_gcc clk_gcc_ce1_ahb_clk>,
+			 <&clock_gcc clk_gcc_ce1_axi_clk>,
+			 <&clock_gcc clk_ce1_clk_src>;
 
 		clock-names = "xo", "scm_core_clk", "scm_iface_clk",
 					"scm_bus_clk", "scm_core_clk_src";
@@ -2292,7 +2309,7 @@ dai_mi2s: qcom,msm-dai-q6-mi2s-quat {
 		qcom,has-48mhz-xo;
 		qcom,has-pronto-hw;
 		qcom,wcnss-pm = <11 19 1200 1 1 6>;
-};
+	};
 
 	qcom,ocmem@fdd00000 {
 		compatible = "qcom,msm-ocmem";
@@ -2309,6 +2326,10 @@ dai_mi2s: qcom,msm-dai-q6-mi2s-quat {
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges = <0x0 0xfec00000 0x180000>;
+
+		clocks = <&clock_rpm clk_ocmemgx_core_clk>,
+			<&clock_mmss clk_ocmemcx_ocmemnoc_clk>;
+		clock-names = "core_clk", "iface_clk";
 
 		partition@0 {
 			reg = <0x0 0x100000>;
@@ -2367,6 +2388,19 @@ dai_mi2s: qcom,msm-dai-q6-mi2s-quat {
 				<55 512 120000 1200000>,
 				<55 512 393600 3936000>;
 		qcom,ce-opp-freq = <100000000>;
+
+		clock-names = "core_clk", "iface_clk", "bus_clk",
+			"core_clk_src", "ce_drv_core_clk",
+			"ce_drv_iface_clk", "ce_drv_bus_clk",
+			"ce_drv_core_clk_src";
+		clocks = <&clock_gcc clk_gcc_ce1_clk>,
+			 <&clock_gcc clk_gcc_ce1_ahb_clk>,
+			 <&clock_gcc clk_gcc_ce1_axi_clk>,
+			 <&clock_gcc clk_ce1_clk_src>,
+			 <&clock_gcc clk_gcc_ce2_clk>,
+			 <&clock_gcc clk_gcc_ce2_ahb_clk>,
+			 <&clock_gcc clk_gcc_ce2_axi_clk>,
+			 <&clock_gcc clk_ce2_clk_src>;
 	};
 
 	qcom,wdt@f9017000 {
@@ -2391,6 +2425,14 @@ dai_mi2s: qcom,msm-dai-q6-mi2s-quat {
 		vdd-supply = <&gdsc_venus>;
 		qcom,proxy-reg-names = "vdd";
 
+		clocks = <&clock_mmss clk_venus0_vcodec0_clk>,
+			<&clock_mmss clk_venus0_ahb_clk>,
+			<&clock_mmss clk_venus0_axi_clk>,
+			<&clock_mmss clk_venus0_ocmemnoc_clk>,
+			<&clock_gcc clk_gcc_ce1_clk>,
+			<&clock_gcc clk_gcc_ce1_ahb_clk>,
+			<&clock_gcc clk_gcc_ce1_axi_clk>,
+			<&clock_gcc clk_ce1_clk_src>;
 		clock-names = "core_clk", "iface_clk", "bus_clk", "mem_clk",
 				"scm_core_clk", "scm_iface_clk", "scm_bus_clk",
 				"scm_core_clk_src";
@@ -2482,6 +2524,13 @@ dai_mi2s: qcom,msm-dai-q6-mi2s-quat {
 		      <0xfd444000 0x8000>;
 		reg-names = "crypto-base","crypto-bam-base";
 		interrupts = <0 236 0>;
+		clock-names = "core_clk", "iface_clk", "bus_clk",
+				"core_clk_src";
+		clocks = <&clock_gcc clk_gcc_ce2_clk>,
+			 <&clock_gcc clk_gcc_ce2_ahb_clk>,
+			 <&clock_gcc clk_gcc_ce2_axi_clk>,
+			 <&clock_gcc clk_ce2_clk_src>;
+
 		qcom,bam-pipe-pair = <1>;
 		qcom,ce-hw-instance = <1>;
 		qcom,ce-device = <0>;
@@ -2500,6 +2549,14 @@ dai_mi2s: qcom,msm-dai-q6-mi2s-quat {
 		      <0xfd444000 0x8000>;
 		reg-names = "crypto-base","crypto-bam-base";
 		interrupts = <0 236 0>;
+
+		clock-names = "core_clk", "iface_clk", "bus_clk",
+				"core_clk_src";
+		clocks = <&clock_gcc clk_gcc_ce2_clk>,
+			 <&clock_gcc clk_gcc_ce2_ahb_clk>,
+			 <&clock_gcc clk_gcc_ce2_axi_clk>,
+			 <&clock_gcc clk_ce2_clk_src>;
+
 		qcom,bam-pipe-pair = <2>;
 		qcom,ce-hw-instance = <1>;
 		qcom,ce-device = <0>;
