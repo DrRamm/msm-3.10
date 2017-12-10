@@ -138,6 +138,9 @@ fw-shipped-$(CONFIG_YAM) += yam/1200.bin yam/9600.bin
 fw-shipped-$(CONFIG_TOUCHSCREEN_ATMEL_MXT) += mxt_double_diamond_config.fw \
 	mxt_wintek_diamond_config_v20.fw mxt_wintek_diamond_config_v30_sharp.fw \
 	mxt_wintek_diamond_config_v30_lg.fw mxT540SC20.fw mxT540SC30.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_ATMEL_MXT_XIAOMI) += mxt_double_diamond_config.fw \
+	mxt_wintek_diamond_config_v20.fw mxt_wintek_diamond_config_v30_sharp.fw \
+	mxt_wintek_diamond_config_v30_lg.fw mxT540SC20.fw mxT540SC30.fw
 fw-shipped-$(CONFIG_TOUCHSCREEN_ATMEL_640T) += mxt_640t_config_revc.fw \
 	mxt_640t_config_revd.fw \
 	mxt_640t_ofilm_config.fw \
