@@ -1145,7 +1145,9 @@ struct mdp_display_commit {
 	 *	2.2 non split display: l_roi = roi and r_roi = 0
 	 */
 	struct mdp_rect l_roi;
+#ifndef CONFIG_OLD_HWCOMPOSER
 	struct mdp_rect r_roi;
+#endif
 };
 
 /**

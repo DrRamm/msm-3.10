@@ -1736,6 +1736,9 @@ static bool __is_roi_valid(struct mdss_mdp_pipe *pipe,
 {
 	bool ret = true;
 	bool is_right_mixer = pipe->mixer_left->is_right_mixer;
+#ifndef CONFIG_OLD_HWCOMPOSER
+	r_roi == 0;
+#endif
 	struct mdss_rect roi = is_right_mixer ? *r_roi : *l_roi;
 	struct mdss_rect dst = pipe->dst;
 	struct mdss_data_type *mdata = mdss_mdp_get_mdata();
@@ -1879,12 +1882,19 @@ static void __validate_and_set_roi(struct msm_fb_data_type *mfd,
 	if (!commit)
 		goto set_roi;
 
+#ifndef CONFIG_OLD_HWCOMPOSER
 	if (!memcmp(&commit->l_roi, &tmp_roi, sizeof(tmp_roi)) &&
-	    !memcmp(&commit->r_roi, &tmp_roi, sizeof(tmp_roi)))
+	   !memcmp(&commit->r_roi, &tmp_roi, sizeof(tmp_roi)))
 		goto set_roi;
+#else
+	if (!memcmp(&commit->l_roi, &tmp_roi, sizeof(tmp_roi)))
+		goto set_roi;
+#endif
 
 	rect_copy_mdp_to_mdss(&commit->l_roi, &l_roi);
+#ifndef CONFIG_OLD_HWCOMPOSER
 	rect_copy_mdp_to_mdss(&commit->r_roi, &r_roi);
+#endif
 
 	pr_debug("input: l_roi:-> %d %d %d %d r_roi:-> %d %d %d %d\n",
 		l_roi.x, l_roi.y, l_roi.w, l_roi.h,

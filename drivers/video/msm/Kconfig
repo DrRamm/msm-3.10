@@ -17,6 +17,12 @@ config FB_MSM
 
 if FB_MSM
 
+config OLD_HWCOMPOSER
+bool "Support for backlight control"
+	default n
+	---help---
+	  Say Y here if you want to enable ioctl fix for old userpace binaris.
+
 config FB_MSM_BACKLIGHT
 	bool "Support for backlight control"
 	default y
