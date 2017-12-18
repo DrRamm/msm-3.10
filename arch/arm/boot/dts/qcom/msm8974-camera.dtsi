@@ -173,8 +173,8 @@
 		interrupts = <0 55 0>;
 		interrupt-names = "ispif";
 		qcom,num-isps = <0x2>;
-		/*vfe0-vdd-supply = <&gdsc_vfe>;
-		vfe1-vdd-supply = <&gdsc_vfe>;*/
+		vfe0-vdd-supply = <&gdsc_vfe>;
+		vfe1-vdd-supply = <&gdsc_vfe>;
 		clocks = <&clock_mmss clk_camss_ispif_ahb_clk>,
 			<&clock_mmss clk_csi0_clk_src>,
 			<&clock_mmss clk_camss_csi0_clk>,
@@ -218,12 +218,17 @@
 			"0", "0", "0";
 	};
 
+	qcom,vfe {
+		compatible = "qcom,vfe";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
 		vfe0: qcom,vfe@fda10000 {
 			cell-index = <0>;
 			compatible = "qcom,vfe40";
 			reg = <0xfda10000 0x1000>,
-				<0xfda40000 0x200>,
-				<0xfd4a8000 0x4>;
+				<0xfda40000 0x200>;
 			reg-names = "vfe", "vfe_vbif", "tcsr";
 			interrupts = <0 57 0>;
 			interrupt-names = "vfe";
@@ -239,7 +244,7 @@
 				"camss_vfe_vfe_clk", "camss_csi_vfe_clk", "iface_clk",
 				"bus_clk", "alt_bus_clk";
 			qcom,clock-rates = <0 266670000 0 0 0 0 0>;
-			/*qos-entries = <8>;
+			qos-entries = <8>;
 			qos-regs = <0x2C4 0x2C8 0x2CC 0x2D0 0x2D4 0x2D8
 					0x2DC 0x2E0>;
 			qos-settings = <0xAAAAAAAA 0xAAAAAAAA 0xAAAAAAAA
@@ -279,16 +284,15 @@
 					0xCCCC1111 0xCCCC1111 0xCCCC1111
 					0xCCCC1111 0x00000103>;
 			max-clk-nominal = <266670000>;
-			max-clk-turbo =   <320000000>;*/
+			max-clk-turbo =   <320000000>;
 		};
 
 		vfe1: qcom,vfe@fda14000 {
 			cell-index = <1>;
 			compatible = "qcom,vfe40";
 			reg = <0xfda14000 0x1000>,
-				<0xfda40000 0x200>,
-				<0xfd4a8000 0x4>;
-			reg-names = "vfe", "vfe_vbif", "tcsr";
+				<0xfda40000 0x200>;
+			reg-names = "vfe", "vfe_vbif";
 			interrupts = <0 58 0>;
 			interrupt-names = "vfe";
 			vdd-supply = <&gdsc_vfe>;
@@ -303,7 +307,7 @@
 				"camss_vfe_vfe_clk", "camss_csi_vfe_clk", "iface_clk",
 				"bus_clk", "alt_bus_clk";
 			qcom,clock-rates = <0 266670000 0 0 0 0 0>;
-			/*qos-entries = <8>;
+			qos-entries = <8>;
 			qos-regs = <0x2C4 0x2C8 0x2CC 0x2D0 0x2D4 0x2D8
 				    0x2DC 0x2E0>;
 			qos-settings = <0xAAAAAAAA 0xAAAAAAAA 0xAAAAAAAA
@@ -343,11 +347,11 @@
 					0xCCCC1111 0xCCCC1111 0xCCCC1111
 					0xCCCC1111 0x00000103>;
 			max-clk-nominal = <266670000>;
-			max-clk-turbo =   <320000000>;*/
+			max-clk-turbo =   <320000000>;
 		};
+	};
 
-
-	/*qcom,cam_smmu {
+	qcom,cam_smmu {
 		compatible = "qcom,msm-cam-smmu";
 		msm_cam_smmu_cb1: msm_cam_smmu_cb1 {
 			compatible = "qcom,qsmmu-cam-cb";
@@ -385,7 +389,7 @@
 			iommus = <&jpeg_iommu 2>;
 			label = "jpeg_dec";
 		};
-	};*/
+	};
 
 	qcom,jpeg@fda1c000 {
 		cell-index = <0>;
@@ -470,14 +474,14 @@
                            "cpp_iface_clk", "cpp_bus_clk", "micro_iface_clk";
 		qcom,clock-rates = <0 266670000 0 0 266670000 0 0 0>;
 		qcom,min-clock-rate = <266670000>;
-		/*qcom,cpp-fw-payload-info {
+		qcom,cpp-fw-payload-info {
 			qcom,stripe-base = <130>;
 			qcom,plane-base = <115>;
 			qcom,stripe-size = <27>;
 			qcom,plane-size = <5>;
 			qcom,fe-ptr-off = <5>;
 			qcom,we-ptr-off = <11>;
-		};*/
+		};
 	};
 
 	cci: qcom,cci@fda0C000 {
