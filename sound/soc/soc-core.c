@@ -1791,6 +1791,7 @@ static int snd_soc_instantiate_card(struct snd_soc_card *card)
 		 "%s", card->long_name ? card->long_name : card->name);
 	snprintf(card->snd_card->driver, sizeof(card->snd_card->driver),
 		 "%s", card->driver_name ? card->driver_name : card->name);
+	card->snd_card->version = card->version;
 	for (i = 0; i < ARRAY_SIZE(card->snd_card->driver); i++) {
 		switch (card->snd_card->driver[i]) {
 		case '_':

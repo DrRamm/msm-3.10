@@ -36,10 +36,16 @@
 #include <linux/gpio.h>
 #include <linux/pm_qos.h>
 #include <soc/qcom/pm.h>
+#include <linux/of_gpio.h>
+#include <asm/bootinfo.h>
 #include "wcd9320.h"
 #include "wcd9xxx-resmgr.h"
 #include "wcd9xxx-common.h"
 #include "wcdcal-hwdep.h"
+
+#ifdef CONFIG_SND_SOC_TPA6130A2
+#include "tpa6130a2.h"
+#endif
 
 #define TAIKO_MAD_SLIMBUS_TX_PORT 12
 #define TAIKO_MAD_AUDIO_FIRMWARE_PATH "wcd9320/wcd9320_mad_audio.bin"
@@ -459,6 +465,8 @@ struct taiko_priv {
 	 */
 	struct list_head reg_save_restore;
 	struct pm_qos_request pm_qos_req;
+
+	int headset_pa_en_gpio;
 };
 
 static const u32 comp_shift[] = {
@@ -3730,23 +3738,37 @@ static int taiko_hph_pa_event(struct snd_soc_dapm_widget *w,
 		usleep_range(pa_settle_time, pa_settle_time + 1000);
 		pr_debug("%s: sleep %d us after %s PA enable\n", __func__,
 				pa_settle_time, w->name);
-
+		if (taiko->headset_pa_en_gpio > 0)
+			gpio_direction_output(taiko->headset_pa_en_gpio, 1);
+		else {
+#ifdef CONFIG_SND_SOC_TPA6130A2
+		tpa6130a2_stereo_enable(codec, 1);
+#else
 		if (!high_perf_mode) {
 			wcd9xxx_clsh_fsm(codec, &taiko->clsh_d,
 						 req_clsh_state,
 						 WCD9XXX_CLSH_REQ_ENABLE,
 						 WCD9XXX_CLSH_EVENT_POST_PA);
+			}
+#endif
 		}
 		break;
 
 	case SND_SOC_DAPM_POST_PMD:
+		if (taiko->headset_pa_en_gpio > 0)
+			gpio_direction_output(taiko->headset_pa_en_gpio, 0);
+		else {
+#ifdef CONFIG_SND_SOC_TPA6130A2
+			tpa6130a2_stereo_enable(codec, 0);
+#endif
+		}
 		usleep_range(pa_settle_time, pa_settle_time + 1000);
 		pr_debug("%s: sleep %d us after %s PA disable\n", __func__,
 				pa_settle_time, w->name);
 
 		/* Let MBHC module know PA turned off */
 		wcd9xxx_resmgr_notifier_call(&taiko->resmgr, e_post_off);
-
+#ifndef CONFIG_SND_SOC_TPA6130A2
 		if (!high_perf_mode) {
 			wcd9xxx_clsh_fsm(codec, &taiko->clsh_d,
 						 req_clsh_state,
@@ -3758,7 +3780,7 @@ static int taiko_hph_pa_event(struct snd_soc_dapm_widget *w,
 						req_clsab_state,
 						WCD9XXX_CLSAB_REQ_DISABLE);
 		}
-
+#endif
 		break;
 	}
 	return 0;
@@ -6418,6 +6440,11 @@ static int taiko_handle_pdata(struct taiko_priv *taiko)
 		rc = -EINVAL;
 		goto done;
 	}
+
+#ifndef CONFIG_MSM_UART_HS_USE_HS
+	pdata->micbias.cfilt2_mv = 1800;
+#endif
+
 	/* figure out k value */
 	k1 = wcd9xxx_resmgr_get_k_val(&taiko->resmgr, pdata->micbias.cfilt1_mv);
 	k2 = wcd9xxx_resmgr_get_k_val(&taiko->resmgr, pdata->micbias.cfilt2_mv);
@@ -7586,6 +7613,29 @@ static int taiko_codec_probe(struct snd_soc_codec *codec)
 
 	snd_soc_add_codec_controls(codec, impedance_detect_controls,
 				   ARRAY_SIZE(impedance_detect_controls));
+
+
+#ifdef CONFIG_SND_SOC_TPA6130A2
+	tpa6130a2_add_controls(codec);
+#endif
+
+	if (get_hw_version_major() == 4 && get_hw_version_minor() <= 2) {
+		taiko->headset_pa_en_gpio = of_get_named_gpio(core->dev->of_node,
+				"qcom,max97220a-en-gpio", 0);
+		if (taiko->headset_pa_en_gpio < 0) {
+			pr_err("%s: Looking up %s property in node %s failed %d\n", __func__,
+				"qcom,max97220a-en-gpio", core->dev->of_node->full_name,
+				taiko->headset_pa_en_gpio);
+		} else {
+			ret = gpio_request(taiko->headset_pa_en_gpio, "max97220a_enable");
+			if (ret) {
+				pr_err("%s: Failed to request gpio %d\n", __func__,
+						taiko->headset_pa_en_gpio);
+				taiko->headset_pa_en_gpio = -1;
+			}
+		}
+	} else
+		taiko->headset_pa_en_gpio = -1;
 
 	control->num_rx_port = TAIKO_RX_MAX;
 	control->rx_chs = ptr;
