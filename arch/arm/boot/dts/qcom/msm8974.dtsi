@@ -808,12 +808,12 @@
 			qcom,cdc-micbias2-cfilt-sel = <0x1>;
 			qcom,cdc-micbias3-cfilt-sel = <0x0>;
 			qcom,cdc-micbias4-cfilt-sel = <0x2>;
-			/*qcom,cdc-micbias4-mv = <1800>;*/
+			qcom,cdc-micbias4-mv = <1800>;
 			qcom,cdc-mclk-clk-rate = <9600000>;
 			qcom,cdc-slim-ifd = "taiko-slim-ifd";
 			qcom,cdc-slim-ifd-elemental-addr = [00 00 A0 00 17 02];
 			qcom,cdc-dmic-sample-rate = <4800000>;
-			/*qcom,cdc-mad-dmic-rate = <4800000>;*/
+			qcom,cdc-mad-dmic-rate = <4800000>;
 		};
 	};
 
@@ -2133,13 +2133,13 @@
 
 	qcom,msm-dai-mi2s {
 		compatible = "qcom,msm-dai-mi2s";
-        qcom,msm-dai-q6-mi2s-sec {
+        dai_mi2s: qcom,msm-dai-q6-mi2s-sec {
 			compatible = "qcom,msm-dai-q6-mi2s";
 			qcom,msm-dai-q6-mi2s-dev-id = <1>;
 			qcom,msm-mi2s-rx-lines = <1>;
 			qcom,msm-mi2s-tx-lines = <2>;
 		};
-dai_mi2s: qcom,msm-dai-q6-mi2s-quat {
+		qcom,msm-dai-q6-mi2s-quat {
 			compatible = "qcom,msm-dai-q6-mi2s";
 			qcom,msm-dai-q6-mi2s-dev-id = <3>;
 			qcom,msm-mi2s-rx-lines = <1>;
