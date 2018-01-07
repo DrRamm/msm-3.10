@@ -2544,6 +2544,12 @@ static struct clk_lookup msm_clocks_gcc_8974_only[] = {
 	/* Camera Sensor clocks */
 	CLK_LOOKUP_OF("cam_src_clk", gp1_clk_src, "2.qcom,camera"),
 	CLK_LOOKUP_OF("cam_clk", gcc_gp1_clk, "2.qcom,camera"),
+	CLK_LOOKUP_OF("cam_src_clk", gp1_clk_src, "6c.qcom,camera"),
+	CLK_LOOKUP_OF("cam2_src_clk", gp1_clk_src, "20.qcom,camera"),
+	CLK_LOOKUP_OF("cam_clk", gcc_gp1_clk, "6c.qcom,camera"),
+	CLK_LOOKUP_OF("cam2_clk", gcc_gp1_clk, "20.qcom,camera"),
+	CLK_LOOKUP_OF("cam_src_clk", gp1_clk_src, "2.qcom,camera"),
+	CLK_LOOKUP_OF("cam_clk", gcc_gp1_clk, "2.qcom,camera"),
 };
 
 static struct clk *qup_i2c_clks[][2] = {

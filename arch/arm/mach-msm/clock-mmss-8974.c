@@ -2328,7 +2328,19 @@ static struct clk_lookup msm_camera_clocks_8974pro_only[] = {
 };
 
 static struct clk_lookup msm_camera_clocks_8974_only[] = {
+	CLK_LOOKUP_OF("cam_src_clk", mmss_gp0_clk_src, "6e.qcom,camera"),
+	CLK_LOOKUP_OF("cam_src_clk", mmss_gp0_clk_src, "34.qcom,camera"),
+	CLK_LOOKUP_OF("cam_src_clk", mmss_gp0_clk_src, "5a.qcom,camera"),
+	CLK_LOOKUP_OF("cam_src_clk", mmss_gp0_clk_src, "20.qcom,camera"),
+	CLK_LOOKUP_OF("cam_src_clk", mmss_gp0_clk_src, "34.qcom,camera"),
+	CLK_LOOKUP_OF("cam_src_clk", mmss_gp0_clk_src, "5a.qcom,camera"),
 	CLK_LOOKUP_OF("cam_src_clk", mmss_gp1_clk_src, "90.qcom,camera"),
+	CLK_LOOKUP_OF("cam_clk", camss_gp0_clk, "6e.qcom,camera"),
+	CLK_LOOKUP_OF("cam_clk", camss_gp0_clk, "34.qcom,camera"),
+	CLK_LOOKUP_OF("cam_clk", camss_gp0_clk, "5a.qcom,camera"),
+	CLK_LOOKUP_OF("cam_clk", camss_gp0_clk, "20.qcom,camera"),
+	CLK_LOOKUP_OF("cam_clk", camss_gp0_clk, "34.qcom,camera"),
+	CLK_LOOKUP_OF("cam_clk", camss_gp0_clk, "5a.qcom,camera"),
 	CLK_LOOKUP_OF("cam_clk", camss_gp1_clk, "90.qcom,camera"),
 	CLK_LOOKUP_OF("cam_src_clk", mmss_gp0_clk_src, "0.qcom,camera"),
 	CLK_LOOKUP_OF("cam_src_clk", mmss_gp1_clk_src, "1.qcom,camera"),
