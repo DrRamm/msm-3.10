@@ -11,6 +11,10 @@
  *
  */
 
+#ifdef CONFIG_CANCRO_CAMERA
+#include <soc/qcom/camera2_cancro.h>
+#else
+
 #ifndef __CAMERA2_H__
 #define __CAMERA2_H__
 
@@ -224,4 +228,5 @@ struct msm_eeprom_board_info {
 	enum i2c_freq_mode_t i2c_freq_mode;
 };
 
+#endif
 #endif

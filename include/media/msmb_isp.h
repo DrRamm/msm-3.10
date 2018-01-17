@@ -9,6 +9,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+#ifdef CONFIG_CANCRO_CAMERA
+#include <media/msmb_isp_cancro.h>
+#else
+
 #ifndef __MSMB_ISP__
 #define __MSMB_ISP__
 
@@ -876,3 +880,5 @@ struct msm_isp_set_stats_ab {
 	_IOWR('V', BASE_VIDIOC_PRIVATE+25, struct msm_isp_unmap_buf_req)
 
 #endif /* __MSMB_ISP__ */
+
+#endif

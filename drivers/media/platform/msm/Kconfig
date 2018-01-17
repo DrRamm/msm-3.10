@@ -32,9 +32,21 @@ config MSMB_CAMERA_DEBUG
 	depends on MSMB_CAMERA
 	---help---
 	  Enable printk() debug for msm camera 2.0
+ 
+menuconfig CANCRO_CAMERA
+	bool "Cancro camera stack"
+	depends on ARCH_MSM && VIDEO_V4L2 && I2C && MSMB_CAMERA
+	default n
+	---help---
+          Enable the Cancro camera code
 
 if MSMB_CAMERA
+if CANCRO_CAMERA
+source "drivers/media/platform/msm/camera_cancro_v2/Kconfig"
+endif
+if !CANCRO_CAMERA
 source "drivers/media/platform/msm/camera_v2/Kconfig"
+endif
 endif # MSMB_CAMERA
 
 source "drivers/media/platform/msm/vidc/Kconfig"

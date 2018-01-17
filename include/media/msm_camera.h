@@ -10,6 +10,11 @@
  * GNU General Public License for more details.
  *
  */
+
+#ifdef CONFIG_CANCRO_CAMERA
+#include <media/msm_camera_cancro.h>
+#else
+
 #ifndef __LINUX_MSM_CAMERA_H
 #define __LINUX_MSM_CAMERA_H
 
@@ -17,3 +22,4 @@
 #include <uapi/media/msm_camera.h>
 
 #endif /* __LINUX_MSM_CAMERA_H */
+#endif

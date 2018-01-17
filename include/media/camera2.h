@@ -11,6 +11,10 @@
  *
  */
 
+#ifdef CONFIG_CANCRO_CAMERA
+#include <mach/camera2_cancro.h>
+#else
+
 #ifndef __CAMERA2_H__
 #define __CAMERA2_H__
 
@@ -170,4 +174,5 @@ struct msm_eeprom_board_info {
 	struct msm_eeprom_cmm_t cmm_data;
 };
 
+#endif
 #endif

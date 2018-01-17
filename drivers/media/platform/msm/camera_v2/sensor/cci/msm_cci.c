@@ -18,6 +18,7 @@
 #include <linux/of_gpio.h>
 #include <linux/of_platform.h>
 #include <media/msm_isp.h>
+#include <asm/bootinfo.h>
 #include "msm_sd.h"
 #include "msm_cci.h"
 #include "msm_cam_cci_hwreg.h"
@@ -1968,12 +1969,50 @@ static int msm_cci_get_clk_info(struct cci_device *cci_dev,
 	return 0;
 }
 
+static struct of_device_id msm_sensor_dt_match_x3[] = {
+	{.compatible = "qcom,actuator"},
+	{.compatible = "qcom,imx132"},
+	{.compatible = "qcom,imx135"},
+	{}
+};
+
+static struct of_device_id msm_sensor_dt_match_x4[] = {
+	{.compatible = "qcom,eeprom"},
+	{.compatible = "qcom,actuator"},
+	{.compatible = "qcom,imx214"},
+	{.compatible = "qcom,s5k3m2"},
+	{.compatible = "qcom,imx219"},
+	{}
+};
+
+static struct of_device_id msm_sensor_dt_match_x5[] = {
+	{.compatible = "qcom,eeprom"},
+	{.compatible = "qcom,actuator"},
+	{.compatible = "qcom,imx214"},
+	{.compatible = "qcom,ov4688"},
+	{}
+};
 
 
 static int msm_cci_probe(struct platform_device *pdev)
 {
 	struct cci_device *new_cci_dev;
 	int rc = 0, i = 0;
+struct of_device_id *msm_sensor_dt_match;
+	unsigned int hw = get_hw_version_major();
+pr_err("%s:!!!!!!!!!!!!!!! %p DEVICE HW = %d\n", __func__, pdev, hw);
+	switch (hw) {
+	case 5:
+		msm_sensor_dt_match = msm_sensor_dt_match_x5;
+		break;
+	case 4:
+		msm_sensor_dt_match = msm_sensor_dt_match_x4;
+		break;
+	case 3:
+		msm_sensor_dt_match = msm_sensor_dt_match_x3;
+		break;
+	}
+
 	CDBG("%s: pdev %pK device id = %d\n", __func__, pdev, pdev->id);
 	new_cci_dev = kzalloc(sizeof(struct cci_device), GFP_KERNEL);
 	if (!new_cci_dev) {
@@ -2047,7 +2086,8 @@ static int msm_cci_probe(struct platform_device *pdev)
 	msm_cci_init_cci_params(new_cci_dev);
 	msm_cci_init_clk_params(new_cci_dev);
 	msm_cci_init_gpio_params(new_cci_dev);
-	rc = of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+	//rc = of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+	rc = of_platform_bus_probe(pdev->dev.of_node, msm_sensor_dt_match, &pdev->dev);
 	if (rc)
 		pr_err("%s: failed to add child nodes, rc=%d\n", __func__, rc);
 	new_cci_dev->cci_state = CCI_STATE_DISABLED;
