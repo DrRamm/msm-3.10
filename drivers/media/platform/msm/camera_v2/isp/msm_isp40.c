@@ -94,7 +94,11 @@ static uint8_t stats_pingpong_offset_map[] = {
 #define VFE40_BUS_BDG_QOS_CFG_6     0x000002DC
 #define VFE40_BUS_BDG_QOS_CFG_7     0x000002E0
 
+#ifdef CONFIG_ARCH_MSM8974
+#define VFE40_CLK_IDX 1
+#else
 #define VFE40_CLK_IDX 2
+#endif
 static struct msm_cam_clk_info msm_vfe40_clk_info[VFE_CLK_INFO_MAX];
 
 static int32_t msm_vfe40_init_qos_parms(struct vfe_device *vfe_dev,
@@ -1506,6 +1510,7 @@ static void msm_vfe40_axi_cfg_wm_reg(
 		wm_bit_shift = VFE40_WM_BIT_SHIFT_8976_VERSION;
 	} else {
 		burst_len = VFE40_BURST_LEN;
+		wm_bit_shift = VFE40_WM_BIT_SHIFT;
 	}
 
 	if (!stream_info->frame_based) {

@@ -1,3 +1,7 @@
+#ifdef CONFIG_CANCRO_CAMERA
+#include <media/msmb_pproc_cancro.h>
+#else
+
 #ifndef __MSMB_PPROC_H
 #define __MSMB_PPROC_H
 
@@ -402,3 +406,5 @@ struct msm_camera_v4l2_ioctl32_t {
 #endif
 
 #endif /* __MSMB_PPROC_H */
+
+#endif

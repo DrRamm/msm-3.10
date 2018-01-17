@@ -34,6 +34,9 @@
 /*Usage ID from spec for Accelerometer-3D: 0x200073*/
 #define DRIVER_NAME "HID-SENSOR-200073"
 
+/* gobal var for camera vcm to get gravity */
+int16_t g_hid_accl_z;
+
 enum accel_3d_channel {
 	CHANNEL_SCAN_INDEX_X,
 	CHANNEL_SCAN_INDEX_Y,
@@ -144,6 +147,8 @@ static int accel_3d_read_raw(struct iio_dev *indio_dev,
 		ret = hid_sensor_read_raw_hyst_value(
 			&accel_state->common_attributes, val, val2);
 		ret_type = IIO_VAL_INT_PLUS_MICRO;
+		if((!val) && (!val2))
+			g_hid_accl_z = 0; /* make z as default value, horizontal */
 		break;
 	default:
 		ret_type = -EINVAL;
@@ -210,10 +215,13 @@ static int accel_3d_proc_event(struct hid_sensor_hub_device *hsdev,
 
 	dev_dbg(&indio_dev->dev, "accel_3d_proc_event [%d]\n",
 				accel_state->common_attributes.data_ready);
-	if (accel_state->common_attributes.data_ready)
+	if (accel_state->common_attributes.data_ready){
+		//FIXME:if (accel_state->common_attributes.report_id == 1)
+			g_hid_accl_z = accel_state->accel_val[2];
 		hid_sensor_push_data(indio_dev,
 				(u8 *)accel_state->accel_val,
 				sizeof(accel_state->accel_val));
+	}
 
 	return 0;
 }

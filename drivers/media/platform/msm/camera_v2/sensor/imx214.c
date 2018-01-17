@@ -22,13 +22,13 @@ static struct msm_sensor_ctrl_t imx214_s_ctrl;
 static struct msm_sensor_power_setting imx214_power_setting[] = {
 	{
 		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_STANDBY,
+		.seq_val = SENSOR_GPIO_CUSTOM1,
 		.config_val = GPIO_OUT_HIGH,
 		.delay = 1,
 	},
 	{
 		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_RESET,
+		.seq_val = SENSOR_GPIO_IMG_EN,
 		.config_val = GPIO_OUT_HIGH,
 		.delay = 1,
 	},

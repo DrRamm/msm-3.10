@@ -20,7 +20,7 @@ static struct msm_sensor_ctrl_t imx135_s_ctrl;
 static struct msm_sensor_power_setting imx135_power_setting[] = {
 	{
 		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_RESET,
+		.seq_val = SENSOR_GPIO_CUSTOM1,
 		.config_val = GPIO_OUT_HIGH,
 		.delay = 1,
 	},
@@ -270,7 +270,7 @@ static struct msm_sensor_ctrl_t imx135_s_ctrl = {
 	.msm_sensor_mutex = &imx135_mut,
 	.sensor_v4l2_subdev_info = imx135_subdev_info,
 	.sensor_v4l2_subdev_info_size = ARRAY_SIZE(imx135_subdev_info),
-	//.sensor_match_id = imx135_match_id,
+	.sensor_match_id = imx135_match_id,
 };
 
 module_init(imx135_init_module);
