@@ -1,5 +1,4 @@
 /* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -13,7 +12,7 @@
 
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#include <linux/qcom_iommu.h>
+#include <mach/iommu.h>
 
 #include "msm_isp32.h"
 #include "msm_isp_util.h"

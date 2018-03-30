@@ -1,25 +1,25 @@
-/////////////////////////////////////////////////////////////////////////////
-// File Name	: OIS_head.h
-// Function		: Header file
-// Rule         : Use TAB 4
-//
-// Copyright(c)	Rohm Co.,Ltd. All rights reserved
-// Copyright (C) 2015 XiaoMi, Inc.
+///////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
 /***** ROHM Confidential ***************************************************/
 #ifndef OIS_MAIN_H
 #define OIS_MAIN_H
 
-// Compile Switch Purpose
-// #define		CENTER_OF_HALL_OUT			// RHM_HT 2013.03.15	Enable to detect hall output center and set shifted offset value
-#define		ENABLE_GYRO_DRIFT_COMP					// RHM_HT 2013/11/25	Added
-
-#define	_STR_AREA_		"F:\\DEBUGBMP\\"			// For Image save (Debug purpose)
 
 
-// ==> RHM_HT 2013/04/15	Add to the report for error details
-// #define		OIS_TRUE	0
-// #define		OIS_FALSE	-1
-// #define		OIS_READY	1
+#define		ENABLE_GYRO_DRIFT_COMP
+
+#define	_STR_AREA_		"F:\\DEBUGBMP\\"
+
+
+
+
+
+
 
 #define		ADJ_OK				0
 #define		ADJ_ERR				-1
@@ -56,15 +56,15 @@
 #define		ACGX_KGXG_ADJ_ERR		-31
 #define		ACGY_KGYG_ADJ_ERR		-32
 
-#define		TMP_X_ADJ_ERR			-33				// RHM_HT 2013/11/25	Added
-#define		TMP_Y_ADJ_ERR			-34				// RHM_HT 2013/11/25	Added
+#define		TMP_X_ADJ_ERR			-33
+#define		TMP_Y_ADJ_ERR			-34
 
 #define		MALLOC1_ERR				-51
 #define		MALLOC2_ERR				-52
 #define		MALLOC3_ERR				-53
 #define		MALLOC4_ERR				-54
 
-			// Error for sub-routine
+
 #define		OIS_NO_ERROR					ADJ_OK
 #define		OIS_INVALID_PARAMETERS			-100
 #define		OIS_FILE_RENAME_ERROR			-101
@@ -88,11 +88,11 @@
 #define		OIS_MALLOC11_ERROR				-121
 #define		OIS_MALLOC12_ERROR				-122
 #define		OIS_MALLOC13_ERROR				-123
-#define		OIS_MALLOC14_ERROR				-124	// RHM_HT 2013/11/25	add
+#define		OIS_MALLOC14_ERROR				-124
 
 typedef		short int					ADJ_STS;
-// typedef		short int					OIS_BOOL;
-// <== RHM_HT 2013/04/15	Add to the report for error details
+
+
 
 
 typedef		char						OIS_BYTE;
@@ -110,13 +110,13 @@ typedef		volatile unsigned short int	OIS_vUWORD;
 typedef		volatile unsigned long int	OIS_vULONG;
 
 typedef	struct tagBmpGetPos{
-	OIS_WORD	x;						// x start position for clipping
-	OIS_WORD	y;						// y start position for clipping
-	OIS_WORD	width;					// clipping width
-	OIS_WORD 	height;					// clipping height
-	OIS_UBYTE	slice_level;			// slice level of bitmap binalization
-	OIS_UBYTE	filter;					// median filter enable
-	char		*direction;				// direction of detection
+	OIS_WORD	x;
+	OIS_WORD	y;
+	OIS_WORD	width;
+	OIS_WORD 	height;
+	OIS_UBYTE	slice_level;
+	OIS_UBYTE	filter;
+	char		*direction;
 } _BMP_GET_POS;
 
 typedef	struct tagPos{
@@ -125,49 +125,49 @@ typedef	struct tagPos{
 } _POS;
 
 typedef struct tagApproxResult{
-	double		a;						// position x
-	double		b;						// position y
-	double		r;						// Radius
+	double		a;
+	double		b;
+	double		r;
 } _APPROXRESULT;
 
 #include	"OIS_defi.h"
-//#include	"windef.h"
-
-//#define Wait(a)     Wait_usec(a*1000UL)
-
-ADJ_STS		func_PROGRAM_DOWNLOAD( void );												// RHM_HT 2013/04/15	Change "typedef" of return value
-void		func_COEF_DOWNLOAD( OIS_UWORD u16_coef_type );								// RHM_HT 2013/11/26	Reverted
-void		download( OIS_UWORD u16_type, OIS_UWORD u16_coef_type );
-
-ADJ_STS		func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode, OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param );	// RHM_HT 2013/04/15	Change "typedef" of return value
-void		SET_FADJ_PARAM( const _FACT_ADJ *param );
-
-void		I2C_OIS_per_write( OIS_UBYTE u08_adr,  OIS_UWORD u16_dat );
-void		I2C_OIS_mem_write( OIS_UBYTE u08_adr,  OIS_UWORD u16_dat);
-OIS_UWORD	I2C_OIS_per__read( OIS_UBYTE u08_adr );
-OIS_UWORD	I2C_OIS_mem__read( OIS_UBYTE u08_adr );
-void		I2C_OIS_spcl_cmnd( OIS_UBYTE u08_on,   OIS_UBYTE u08_dat );
-void		I2C_OIS_F0123_wr_( OIS_UBYTE u08_dat0, OIS_UBYTE u08_dat1, OIS_UWORD u16_dat2 );
-OIS_UWORD	I2C_OIS_F0123__rd( void );
-
-//void		POWER_UP_AND_PS_DISABLE( void );
-//void		POWER_DOWN_AND_PS_ENABLE( void );
-void		VCOSET0( void );
-void		VCOSET1( void );
-void		WR_I2C( OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat );
-OIS_UWORD	RD_I2C( OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat );
-void		store_FADJ_MEM_to_non_volatile_memory( _FACT_ADJ param );
-void		get_FADJ_MEM_from_non_volatile_memory( void );
-//void		Wait_usec( OIS_ULONG time );
-int 		debug_print(const char *format, ...);					// RHM_HT 2013/04/15	Add for DEBUG
 
 
-//#define	DEBUG_FADJ			//Darcy Mask/20140919
+
+
+ADJ_STS		func_PROGRAM_DOWNLOAD(void);
+void		func_COEF_DOWNLOAD(OIS_UWORD u16_coef_type);
+void		download(OIS_UWORD u16_type, OIS_UWORD u16_coef_type);
+
+ADJ_STS		func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode, OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param);
+void		SET_FADJ_PARAM(const _FACT_ADJ *param);
+
+void		I2C_OIS_per_write(OIS_UBYTE u08_adr,  OIS_UWORD u16_dat);
+void		I2C_OIS_mem_write(OIS_UBYTE u08_adr,  OIS_UWORD u16_dat);
+OIS_UWORD	I2C_OIS_per__read(OIS_UBYTE u08_adr);
+OIS_UWORD	I2C_OIS_mem__read(OIS_UBYTE u08_adr);
+void		I2C_OIS_spcl_cmnd(OIS_UBYTE u08_on,   OIS_UBYTE u08_dat);
+void		I2C_OIS_F0123_wr_(OIS_UBYTE u08_dat0, OIS_UBYTE u08_dat1, OIS_UWORD u16_dat2);
+OIS_UWORD	I2C_OIS_F0123__rd(void);
+
+
+
+void		VCOSET0(void);
+void		VCOSET1(void);
+void		WR_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat);
+OIS_UWORD	RD_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat);
+void		store_FADJ_MEM_to_non_volatile_memory(_FACT_ADJ param);
+void		get_FADJ_MEM_from_non_volatile_memory(void);
+
+int 		debug_print(const char *format, ...);
+
+
+
 #ifdef	DEBUG_FADJ
-// 	#define	DEBUG_printf(a)		printf a
+
 	#define	DEBUG_printf(a)		debug_print a
 #else
 	#define	DEBUG_printf(a)
 #endif
 
-#endif  // OIS_MAIN_H
+#endif

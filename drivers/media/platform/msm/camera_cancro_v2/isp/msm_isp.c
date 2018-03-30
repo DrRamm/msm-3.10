@@ -21,7 +21,7 @@
 #include <media/v4l2-device.h>
 #include <mach/board.h>
 #include <mach/vreg.h>
-#include <linux/qcom_iommu.h>
+#include <mach/iommu.h>
 
 #include "msm_isp.h"
 #include "msm_isp_util.h"
@@ -128,7 +128,7 @@ static int msm_isp_enable_debugfs(struct msm_isp_statistics *stats)
 		return -ENOMEM;
 	return 0;
 }
-static int vfe_probe(struct platform_device *pdev)
+static int __devinit vfe_probe(struct platform_device *pdev)
 {
 	struct vfe_device *vfe_dev;
 	/*struct msm_cam_subdev_info sd_info;*/

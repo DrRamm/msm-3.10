@@ -1,5 +1,5 @@
 /* Copyright (c) 2013, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -30,29 +30,29 @@ static struct msm_led_flash_ctrl_t fctrl;
 static struct i2c_driver lm3646_i2c_driver;
 
 static struct msm_camera_i2c_reg_array lm3646_init_array[] = {
-	{0x04, 0x07}, //Flash Timeout 400ms, Strobe Level trigger
-	{0x05, 0x7A}, //Max 187mA torch, 1030mA flash
+	{0x04, 0x07},
+	{0x05, 0x7A},
 };
 
 static struct msm_camera_i2c_reg_array lm3646_off_array[] = {
-	{0x01, 0xE1}, //Standby
+	{0x01, 0xE1},
 };
 
 static struct msm_camera_i2c_reg_array lm3646_release_array[] = {
 };
 
 static struct msm_camera_i2c_reg_array lm3646_low_array[] = {
-	{0x07, 0x00}, //LED2 Max torch
-	{0x01, 0xE2}, //enable LED Torch
+	{0x07, 0x00},
+	{0x01, 0xE2},
 };
 
 static struct msm_camera_i2c_reg_array lm3646_torch_array[] = {
-	{0x07, 0x40}, //LED1 90mA, LED2 90mA
-	{0x01, 0xE2}, //enable LED Torch
+	{0x07, 0x40},
+	{0x01, 0xE2},
 };
 
 static struct msm_camera_i2c_reg_array lm3646_high_array[] = {
-	{0x06, 0x00}, //LED2 Max Torch
+	{0x06, 0x00},
 	{0x01, 0xE3},
 };
 
@@ -87,7 +87,7 @@ static int msm_flash_lm3646_i2c_probe(struct i2c_client *client,
 		id = lm3646_i2c_id;
 	}
 
-	if(get_hw_version_major() == 5)
+	if (get_hw_version_major() == 5)
 		return  msm_flash_i2c_probe(client, id);
 	else
 		return -EFAULT;

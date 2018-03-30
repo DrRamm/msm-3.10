@@ -1,5 +1,5 @@
 /* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -33,6 +33,7 @@
 #define CDBG(fmt, args...) do { } while (0)
 #endif
 
+static int power_count;
 struct msm_led_flash_ctrl_t *led_class_fctrl;
 
 int32_t msm_led_i2c_trigger_get_subdev_id(struct msm_led_flash_ctrl_t *fctrl,
@@ -61,20 +62,24 @@ int32_t msm_led_i2c_trigger_config(struct msm_led_flash_ctrl_t *fctrl,
 		return -EINVAL;
 	}
 
-        fctrl->flash_op_current[0] = cfg->flash_current[0];
-        fctrl->flash_op_current[1] = cfg->flash_current[1];
+	fctrl->flash_op_current[0] = cfg->flash_current[0];
+	fctrl->flash_op_current[1] = cfg->flash_current[1];
 
 	switch (cfg->cfgtype) {
 
 	case MSM_CAMERA_LED_INIT:
 		if (fctrl->func_tbl->flash_led_init)
 			rc = fctrl->func_tbl->flash_led_init(fctrl);
+		power_count++;
+
 		break;
 
 	case MSM_CAMERA_LED_RELEASE:
 		if (fctrl->func_tbl->flash_led_release)
 			rc = fctrl->func_tbl->
 				flash_led_release(fctrl);
+		power_count = 0;
+
 		break;
 
 	case MSM_CAMERA_LED_OFF:
@@ -116,7 +121,7 @@ int msm_flash_led_init(struct msm_led_flash_ctrl_t *fctrl)
 			power_info->gpio_conf->cam_gpiomux_conf_tbl_size);
 	}
 
-	if(gpio_get_value_cansleep(power_info->gpio_conf->gpio_num_info->gpio_num[SENSOR_GPIO_FL_EN]))
+	if (gpio_get_value_cansleep(power_info->gpio_conf->gpio_num_info->gpio_num[SENSOR_GPIO_FL_EN]))
 		return 0; /* already released */
 
 	rc = msm_camera_request_gpio_table(
@@ -155,7 +160,7 @@ int msm_flash_led_release(struct msm_led_flash_ctrl_t *fctrl)
 	flashdata = fctrl->flashdata;
 	power_info = &flashdata->power_info;
 
-	if(!gpio_get_value_cansleep(power_info->gpio_conf->gpio_num_info->gpio_num[SENSOR_GPIO_FL_EN]))
+	if (!gpio_get_value_cansleep(power_info->gpio_conf->gpio_num_info->gpio_num[SENSOR_GPIO_FL_EN]))
 		return 0; /* already released */
 
 	gpio_set_value_cansleep(
@@ -492,29 +497,36 @@ DEFINE_SIMPLE_ATTRIBUTE(ledflashdbg_fops,
 #endif
 
 static void msm_led_i2c_torch_brightness_set(struct led_classdev *led_cdev,
-                                enum led_brightness value)
+				enum led_brightness value)
 {
-	if (!led_class_fctrl) return;
+	if (!led_class_fctrl)
+	return;
 
 	pr_info("%s : %d @%p", __func__, value, led_class_fctrl);
 	if (value != 0) {
 		msm_flash_led_init(led_class_fctrl);
 		msm_flash_led_torch(led_class_fctrl, value);
+		power_count++;
 	} else {
-		msm_flash_led_release(led_class_fctrl);
+		msm_flash_led_off(led_class_fctrl);
+
+		if (power_count <= 1)
+			msm_flash_led_release(led_class_fctrl);
+		if (power_count > 0)
+			power_count--;
 	}
 	led_class_fctrl->torch_brightness = value;
 };
 
 static enum led_brightness msm_led_i2c_torch_brightness_get(struct led_classdev *led_cdev)
 {
-        return led_class_fctrl->torch_brightness;
+	return led_class_fctrl->torch_brightness;
 }
 static struct led_classdev msm_led_i2c_torch = {
-        .name                   = "flashlight",
-        .brightness_set = msm_led_i2c_torch_brightness_set,
-        .brightness_get = msm_led_i2c_torch_brightness_get,
-        .brightness             = LED_OFF,
+	.name                   = "flashlight",
+	.brightness_set = msm_led_i2c_torch_brightness_set,
+	.brightness_get = msm_led_i2c_torch_brightness_get,
+	.brightness             = LED_OFF,
 };
 
 

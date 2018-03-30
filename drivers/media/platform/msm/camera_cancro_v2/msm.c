@@ -631,7 +631,7 @@ static int msm_unsubscribe_event(struct v4l2_fh *fh,
 static int msm_subscribe_event(struct v4l2_fh *fh,
 	struct v4l2_event_subscription *sub)
 {
-	return v4l2_event_subscribe(fh, sub, 5, NULL);
+	return v4l2_event_subscribe(fh, sub, 5);
 }
 
 static const struct v4l2_ioctl_ops g_msm_ioctl_ops = {
@@ -965,7 +965,7 @@ static void msm_sd_notify(struct v4l2_subdev *sd,
 	}
 }
 
-static int msm_probe(struct platform_device *pdev)
+static int __devinit msm_probe(struct platform_device *pdev)
 {
 	struct msm_video_device *pvdev;
 	int rc = 0;

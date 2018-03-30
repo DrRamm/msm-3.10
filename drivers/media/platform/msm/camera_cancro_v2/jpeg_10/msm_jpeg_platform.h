@@ -17,7 +17,7 @@
 #include <linux/platform_device.h>
 #include <linux/ion.h>
 #include <linux/iommu.h>
-#include <linux/qcom_iommu.h>
+#include <mach/iommu.h>
 #include "msm_jpeg_sync.h"
 #define JPEG_CLK_RATE 266670000
 #define JPEG_MAX_CLK_RATE 320000000

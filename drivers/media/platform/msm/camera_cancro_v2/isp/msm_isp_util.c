@@ -1,5 +1,5 @@
 /* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -223,7 +223,7 @@ int msm_isp_subscribe_event(struct v4l2_subdev *sd, struct v4l2_fh *fh,
 {
 	struct vfe_device *vfe_dev = v4l2_get_subdevdata(sd);
 	int rc = 0;
-	rc = v4l2_event_subscribe(fh, sub, MAX_ISP_V4l2_EVENTS, NULL);
+	rc = v4l2_event_subscribe(fh, sub, MAX_ISP_V4l2_EVENTS);
 	if (rc == 0) {
 		if (sub->type == V4L2_EVENT_ALL) {
 			int i;
@@ -523,7 +523,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 	case VFE_READ_DMI_32BIT:
 	case VFE_READ_DMI_64BIT: {
 		if (reg_cfg_cmd->cmd_type == VFE_WRITE_DMI_64BIT ||
-					reg_cfg_cmd->cmd_type == VFE_READ_DMI_64BIT) {
+			reg_cfg_cmd->cmd_type == VFE_READ_DMI_64BIT) {
 			if ((reg_cfg_cmd->u.dmi_info.hi_tbl_offset <=
 				reg_cfg_cmd->u.dmi_info.lo_tbl_offset) ||
 				(reg_cfg_cmd->u.dmi_info.hi_tbl_offset -

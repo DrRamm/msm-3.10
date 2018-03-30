@@ -27,9 +27,9 @@
 #include <linux/timer.h>
 #include <linux/kernel.h>
 #include <linux/workqueue.h>
-#include <linux/clk/msm-clk.h>
-#include <linux/msm_iommu_domains.h>
-#include <linux/qcom_iommu.h>
+#include <mach/clk.h>
+#include <mach/iommu_domains.h>
+#include <mach/iommu.h>
 #include <mach/vreg.h>
 #include <media/msm_isp.h>
 #include <media/v4l2-event.h>
@@ -37,7 +37,7 @@
 #include <media/msmb_camera.h>
 #include <media/msmb_generic_buf_mgr.h>
 #include <media/msmb_pproc.h>
-#include <linux/clk/msm-clk-provider.h>
+#include <mach/clk-provider.h>
 #include "msm_cpp.h"
 #include "msm_isp_util.h"
 #include "msm_camera_io_util.h"
@@ -507,7 +507,7 @@ static int cpp_init_mem(struct cpp_device *cpp_dev)
 
 	kref_init(&cpp_dev->refcount);
 	kref_get(&cpp_dev->refcount);
-	cpp_dev->client = msm_ion_client_create("cpp");
+	cpp_dev->client = msm_ion_client_create(-1, "cpp");
 
 	CPP_DBG("E\n");
 	if (!cpp_dev->domain) {
@@ -1302,7 +1302,7 @@ static int msm_cpp_cfg(struct cpp_device *cpp_dev,
 	struct msm_buf_mngr_info buff_mgr_info, dup_buff_mgr_info;
 	int32_t status = 0;
 	int in_fd;
-	uint32_t stripe_base = 0;
+	int32_t stripe_base = 0;
 	int i = 0;
 	if (!new_frame) {
 		pr_err("Insufficient memory. return\n");
@@ -1353,14 +1353,6 @@ static int msm_cpp_cfg(struct cpp_device *cpp_dev,
 		pr_err("%s %d Invalid frame message\n", __func__, __LINE__);
 		return -EINVAL;
 	}
-
-	if (stripe_base == UINT_MAX || new_frame->num_strips >
-		(UINT_MAX - 1 - stripe_base) / 27) {
-		pr_err("Invalid frame message,num_strips %d is large\n",
-			new_frame->num_strips);
-		return -EINVAL;
-	}
-
 	in_phyaddr = msm_cpp_fetch_buffer_info(cpp_dev,
 		&new_frame->input_buffer_info,
 		((new_frame->input_buffer_info.identity >> 16) & 0xFFFF),
@@ -1890,7 +1882,7 @@ int msm_cpp_subscribe_event(struct v4l2_subdev *sd, struct v4l2_fh *fh,
 	struct v4l2_event_subscription *sub)
 {
 	CPP_DBG("Called\n");
-	return v4l2_event_subscribe(fh, sub, MAX_CPP_V4l2_EVENTS, NULL);
+	return v4l2_event_subscribe(fh, sub, MAX_CPP_V4l2_EVENTS);
 }
 
 int msm_cpp_unsubscribe_event(struct v4l2_subdev *sd, struct v4l2_fh *fh,
@@ -1981,7 +1973,7 @@ static int cpp_register_domain(void)
 }
 
 
-static int cpp_probe(struct platform_device *pdev)
+static int __devinit cpp_probe(struct platform_device *pdev)
 {
 	struct cpp_device *cpp_dev;
 	int rc = 0;

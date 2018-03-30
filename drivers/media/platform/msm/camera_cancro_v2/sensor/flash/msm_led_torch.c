@@ -1,5 +1,5 @@
 /* Copyright (c) 2013, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -43,7 +43,7 @@ static enum led_brightness msm_led_torch_brightness_get(struct led_classdev *led
 }
 
 static struct led_classdev msm_torch_led = {
-	.name			= "torch-light",
+	.name			= "flashlight",
 	.brightness_set	= msm_led_torch_brightness_set,
 	.brightness_get	= msm_led_torch_brightness_get,
 	.brightness		= LED_OFF,

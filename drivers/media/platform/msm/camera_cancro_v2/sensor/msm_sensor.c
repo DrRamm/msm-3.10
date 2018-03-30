@@ -1,5 +1,5 @@
 /* Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -18,7 +18,7 @@
 #include "msm_camera_io_util.h"
 #include "msm_camera_i2c_mux.h"
 #include <mach/rpm-regulator.h>
-#include <linux/regulator/rpm-smd-regulator.h>
+#include <mach/rpm-regulator-smd.h>
 #include <linux/regulator/consumer.h>
 
 /*#define CONFIG_MSMB_CAMERA_DEBUG*/

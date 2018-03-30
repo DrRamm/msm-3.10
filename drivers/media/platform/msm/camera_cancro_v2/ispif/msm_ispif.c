@@ -1,4 +1,5 @@
 /* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -58,7 +59,7 @@ static void msm_ispif_io_dump_reg(struct ispif_device *ispif)
 }
 
 static inline int msm_ispif_is_intf_valid(uint32_t csid_version,
-	enum msm_ispif_vfe_intf intf_type)
+	uint8_t intf_type)
 {
 	return ((csid_version <= CSID_VERSION_V22 && intf_type != VFE0) ||
 		(intf_type >= VFE_MAX)) ? false : true;
@@ -289,7 +290,7 @@ static int msm_ispif_subdev_g_chip_ident(struct v4l2_subdev *sd,
 }
 
 static void msm_ispif_sel_csid_core(struct ispif_device *ispif,
-	uint8_t intftype, uint8_t csid, enum msm_ispif_vfe_intf vfe_intf)
+	uint8_t intftype, uint8_t csid, uint8_t vfe_intf)
 {
 	uint32_t data;
 
@@ -329,7 +330,7 @@ static void msm_ispif_sel_csid_core(struct ispif_device *ispif,
 }
 
 static void msm_ispif_enable_crop(struct ispif_device *ispif,
-	uint8_t intftype, enum msm_ispif_vfe_intf vfe_intf, uint16_t start_pixel,
+	uint8_t intftype, uint8_t vfe_intf, uint16_t start_pixel,
 	uint16_t end_pixel)
 {
 	uint32_t data;
@@ -361,7 +362,7 @@ static void msm_ispif_enable_crop(struct ispif_device *ispif,
 }
 
 static void msm_ispif_enable_intf_cids(struct ispif_device *ispif,
-	uint8_t intftype, uint16_t cid_mask, enum msm_ispif_vfe_intf vfe_intf, uint8_t enable)
+	uint8_t intftype, uint16_t cid_mask, uint8_t vfe_intf, uint8_t enable)
 {
 	uint32_t intf_addr, data;
 
@@ -403,7 +404,7 @@ static void msm_ispif_enable_intf_cids(struct ispif_device *ispif,
 }
 
 static int msm_ispif_validate_intf_status(struct ispif_device *ispif,
-	uint8_t intftype, enum msm_ispif_vfe_intf vfe_intf)
+	uint8_t intftype, uint8_t vfe_intf)
 {
 	int rc = 0;
 	uint32_t data = 0;
@@ -443,7 +444,7 @@ static int msm_ispif_validate_intf_status(struct ispif_device *ispif,
 }
 
 static void msm_ispif_select_clk_mux(struct ispif_device *ispif,
-	uint8_t intftype, uint8_t csid, enum msm_ispif_vfe_intf vfe_intf)
+	uint8_t intftype, uint8_t csid, uint8_t vfe_intf)
 {
 	uint32_t data = 0;
 
@@ -946,13 +947,6 @@ static irqreturn_t msm_io_ispif_irq(int irq_num, void *data)
 static int msm_ispif_set_vfe_info(struct ispif_device *ispif,
 	struct msm_ispif_vfe_info *vfe_info)
 {
-	if (!vfe_info || (vfe_info->num_vfe <= 0) ||
-	    ((uint32_t)(vfe_info->num_vfe) > VFE_MAX)) {
-		pr_err("Invalid VFE info: %p %d\n", vfe_info,
-			   (vfe_info ? vfe_info->num_vfe:0));
-		return -EINVAL;
-	}
-
 	memcpy(&ispif->vfe_info, vfe_info, sizeof(struct msm_ispif_vfe_info));
 	if (ispif->vfe_info.num_vfe > ispif->hw_num_isps)
 		return -EINVAL;
@@ -1117,10 +1111,6 @@ static long msm_ispif_subdev_ioctl(struct v4l2_subdev *sd,
 	case VIDIOC_MSM_ISPIF_CFG:
 		return msm_ispif_cmd(sd, arg);
 	case MSM_SD_SHUTDOWN: {
-		struct ispif_device *ispif =
-			(struct ispif_device *)v4l2_get_subdevdata(sd);
-		if (ispif && ispif->base)
-			msm_ispif_release(ispif);
 		return 0;
 	}
 	default:
@@ -1179,7 +1169,7 @@ static const struct v4l2_subdev_internal_ops msm_ispif_internal_ops = {
 	.close = ispif_close_node,
 };
 
-static int ispif_probe(struct platform_device *pdev)
+static int __devinit ispif_probe(struct platform_device *pdev)
 {
 	int rc;
 	struct ispif_device *ispif;

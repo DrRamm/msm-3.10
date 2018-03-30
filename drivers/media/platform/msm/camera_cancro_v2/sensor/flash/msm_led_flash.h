@@ -1,5 +1,5 @@
 /* Copyright (c) 2009-2013, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -19,7 +19,7 @@
 #include <linux/ratelimit.h>
 #include <media/v4l2-subdev.h>
 #include <media/msm_cam_sensor.h>
-#include <soc/qcom/camera2.h>
+#include <mach/camera2.h>
 #include "msm_camera_i2c.h"
 #include "msm_sd.h"
 

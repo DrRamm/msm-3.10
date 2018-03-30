@@ -1,5 +1,4 @@
 /* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -23,8 +22,8 @@
 #include <linux/avtimer_kernel.h>
 #include <media/v4l2-subdev.h>
 #include <media/msmb_isp.h>
-#include <linux/msm-bus.h>
-#include <linux/msm-bus-board.h>
+#include <mach/msm_bus.h>
+#include <mach/msm_bus_board.h>
 #include "msm_buf_mgr.h"
 
 #define MAX_IOMMU_CTX 2

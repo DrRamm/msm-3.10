@@ -1,5 +1,5 @@
 /* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -323,18 +323,10 @@ static int32_t msm_cci_i2c_read(struct v4l2_subdev *sd,
 	enum cci_i2c_queue_t queue = QUEUE_1;
 	struct cci_device *cci_dev = NULL;
 	struct msm_camera_cci_i2c_read_cfg *read_cfg = NULL;
-
 	CDBG("%s line %d\n", __func__, __LINE__);
 	cci_dev = v4l2_get_subdevdata(sd);
 	master = c_ctrl->cci_info->cci_i2c_master;
 	read_cfg = &c_ctrl->cfg.cci_i2c_read_cfg;
-
-	if (master >= MASTER_MAX || master < 0) {
-		pr_err("%s:%d Invalid I2C master %d\n",
-			__func__, __LINE__, master);
-		return -EINVAL;
-	}
-
 	mutex_lock(&cci_dev->cci_master_info[master].mutex);
 
 	/*
@@ -501,7 +493,7 @@ static int32_t msm_cci_i2c_read_bytes(struct v4l2_subdev *sd,
 		return -EINVAL;
 	}
 
-	if (c_ctrl->cci_info->cci_i2c_master >= MASTER_MAX
+	if (c_ctrl->cci_info->cci_i2c_master > MASTER_MAX
 			|| c_ctrl->cci_info->cci_i2c_master < 0) {
 		pr_err("%s:%d Invalid I2C master addr\n", __func__, __LINE__);
 		return -EINVAL;
@@ -547,7 +539,7 @@ static int32_t msm_cci_i2c_write(struct v4l2_subdev *sd,
 	enum cci_i2c_master_t master;
 	enum cci_i2c_queue_t queue = QUEUE_0;
 	cci_dev = v4l2_get_subdevdata(sd);
-	if (c_ctrl->cci_info->cci_i2c_master >= MASTER_MAX
+	if (c_ctrl->cci_info->cci_i2c_master > MASTER_MAX
 			|| c_ctrl->cci_info->cci_i2c_master < 0) {
 		pr_err("%s:%d Invalid I2C master addr\n", __func__, __LINE__);
 		return -EINVAL;
@@ -1146,7 +1138,7 @@ static struct of_device_id msm_sensor_dt_match_x5[] = {
 };
 
 
-static int msm_cci_probe(struct platform_device *pdev)
+static int __devinit msm_cci_probe(struct platform_device *pdev)
 {
 	struct cci_device *new_cci_dev;
 	struct of_device_id *msm_sensor_dt_match;

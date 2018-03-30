@@ -1,5 +1,5 @@
 /* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -147,23 +147,25 @@ static int32_t imx214_platform_probe(struct platform_device *pdev)
 
 static int imx214_wait_otp_page(struct msm_sensor_ctrl_t *s_ctrl, u16 page)
 {
-        int i;
-        uint16_t byte = 0;
+	int i;
+	uint16_t byte = 0;
 
-        s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write(
+	s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write(
 		s_ctrl->sensor_i2c_client, 0x0A02, page, MSM_CAMERA_I2C_BYTE_DATA);
-        s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write(
+	s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write(
 		s_ctrl->sensor_i2c_client, 0x0A00, 0x01, MSM_CAMERA_I2C_BYTE_DATA);
-        udelay(10);
-        for(i = 0; i < 10; i++) {
-	        s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(
-			s_ctrl->sensor_i2c_client, 0x0A01, &byte, MSM_CAMERA_I2C_BYTE_DATA);
-                if((byte & 0x1) == 1) return 1;
-		else if(byte == 0x5d) return 0;
-                udelay(10);
-                pr_info("%s byte:%d", __func__, byte);
-        }
-        return 0;
+	udelay(10);
+	for (i = 0; i < 10; i++) {
+		s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(
+				s_ctrl->sensor_i2c_client, 0x0A01, &byte, MSM_CAMERA_I2C_BYTE_DATA);
+		if ((byte & 0x1) == 1)
+		return 1;
+		else if (byte == 0x5d)
+		return 0;
+		udelay(10);
+		pr_info("%s byte:%d", __func__, byte);
+	}
+	return 0;
 }
 
 uint16_t imx214_af_inf = 0;
@@ -175,6 +177,7 @@ int16_t lc8214_af_inf  = 0;
 int16_t lc8214_af_mac  = 0;
 int8_t  g_x5_vendor    = 0;
 
+#define SYSMAT_DBG 0
 static int32_t imx214_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int32_t i;
@@ -184,6 +187,12 @@ static int32_t imx214_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 	uint16_t idd[12];
 	uint16_t sid = s_ctrl->sensor_i2c_client->cci_client->sid;
 	uint16_t addr_type = s_ctrl->sensor_i2c_client->addr_type;
+#if SYSMAT_DBG
+	uint8_t dt[90] = {0};
+	uint8_t s1[180] = {0};
+	uint8_t s2[90] = {0};
+	uint8_t matcmd[512] = {0};
+#endif
 
 	rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(
 			s_ctrl->sensor_i2c_client,
@@ -195,14 +204,14 @@ static int32_t imx214_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 	}
 
 	pr_info("%s: read id: %x expected id: %x\n", __func__, chipid,
-		s_ctrl->sensordata->slave_info->sensor_id);
+			s_ctrl->sensordata->slave_info->sensor_id);
 
 	if (chipid != s_ctrl->sensordata->slave_info->sensor_id) {
 		pr_err("msm_sensor_match_id chip id doesnot match");
 		return -ENODEV;
 	}
 
-	if(imx214_af_inf > 0)
+	if (imx214_af_inf > 0)
 		return rc;
 
 	if (get_hw_version_major() == 5) {
@@ -211,15 +220,15 @@ static int32_t imx214_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		s_ctrl->sensor_i2c_client->cci_client->sid = 0x50;
 		s_ctrl->sensor_i2c_client->addr_type = MSM_CAMERA_I2C_BYTE_ADDR;
 		s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(
-			s_ctrl->sensor_i2c_client, 0x00, &chipid,        MSM_CAMERA_I2C_WORD_DATA);
+				s_ctrl->sensor_i2c_client, 0x00, &chipid,        MSM_CAMERA_I2C_WORD_DATA);
 		s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(
-			s_ctrl->sensor_i2c_client, 0x08, &lensvcmid,     MSM_CAMERA_I2C_WORD_DATA);
+				s_ctrl->sensor_i2c_client, 0x08, &lensvcmid,     MSM_CAMERA_I2C_WORD_DATA);
 		s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(
-			s_ctrl->sensor_i2c_client, 0x10, &imx214_af_inf, MSM_CAMERA_I2C_WORD_DATA);
+				s_ctrl->sensor_i2c_client, 0x10, &imx214_af_inf, MSM_CAMERA_I2C_WORD_DATA);
 		s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(
-			s_ctrl->sensor_i2c_client, 0x12, &imx214_af_mac, MSM_CAMERA_I2C_WORD_DATA);
+				s_ctrl->sensor_i2c_client, 0x12, &imx214_af_mac, MSM_CAMERA_I2C_WORD_DATA);
 		s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(
-			s_ctrl->sensor_i2c_client, 0x14, &imx214_af_12m, MSM_CAMERA_I2C_WORD_DATA);
+				s_ctrl->sensor_i2c_client, 0x14, &imx214_af_12m, MSM_CAMERA_I2C_WORD_DATA);
 		s_ctrl->sensor_i2c_client->cci_client->sid = sid;
 		s_ctrl->sensor_i2c_client->addr_type = addr_type;
 		if (chipid == 0x0D03) /* Semco Module */ {
@@ -235,34 +244,46 @@ static int32_t imx214_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		}
 
 		pr_info("%s x5 module:0x%04x|%04x  af inf:%d 12m:%d mac:%d", __func__, chipid, lensvcmid, imx214_af_inf, imx214_af_12m, imx214_af_mac);
+#if SYSMAT_DBG
+		snprintf(dt, 128, "x5 module:0x%04x, %04x - af inf:%d 12m:%d mac:%d",
+				chipid, lensvcmid, imx214_af_inf, imx214_af_12m, imx214_af_mac);
+
+		snprintf(s1, 180, "if [ -f /data/214.txt ]; then echo; else mkdir /data/stmp; echo %s > /data/214.txt;",
+				dt);
+		snprintf(s2, 90,
+				"echo [execmds= +logorgfilespath=/data/stmp]@x5imx214camotpdata > /dev/sysmatdrv; fi;");
+		snprintf(matcmd, 512, "<exsh>%s busybox cp /data/214.txt /data/stmp/214.txt; %s</exsh>", s1, s2);
+		sysmat_writecmd(matcmd, strlen(matcmd)+1);
+#endif
 		return 0;
 	}
 
 /* Read OTP */
-#define IMX214_READB(a,b) s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(s_ctrl->sensor_i2c_client, 0x0A04+a, b, MSM_CAMERA_I2C_BYTE_DATA);
-#define IMX214_READW(a,b) s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(s_ctrl->sensor_i2c_client, 0x0A04+a, b, MSM_CAMERA_I2C_WORD_DATA);
-
-	for(i=2; i>=0 ;i--) {
-		if( imx214_wait_otp_page(s_ctrl, i) == 0) continue;
+#define IMX214_READB(a, b) s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(s_ctrl->sensor_i2c_client, 0x0A04+a, b, MSM_CAMERA_I2C_BYTE_DATA);
+#define IMX214_READW(a, b) s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(s_ctrl->sensor_i2c_client, 0x0A04+a, b, MSM_CAMERA_I2C_WORD_DATA);
+	for (i = 2; i >= 0 ; i--) {
+		if (imx214_wait_otp_page(s_ctrl, i) == 0)
+	continue;
 		IMX214_READB(0x27, &chipid);
-		if(chipid != 0x11) continue;
+		if (chipid != 0x11)
+	continue;
 /* pass flag ok, read af calibration data */
 		IMX214_READW(0x10, &imx214_af_inf);
 		IMX214_READW(0x12, &imx214_af_mac);
-		for(rc=0; rc<=11; rc++)
+		for (rc = 0; rc <= 11; rc++)
 			IMX214_READB(rc, &(idd[rc]));
 		break;
 	}
-	if(i < 0) {
+	if (i < 0) {
 /* maybe old otp format */
 		IMX214_READW(0x14, &imx214_af_inf);
 		IMX214_READW(0x16, &imx214_af_mac);
 	}
 	pr_info("imx214 %02x%02x %02d.%02d.%02d %02d:%02d:%02d, sn:%02x %02x %02x %02x [%d,%d]",
-		idd[0], idd[1], idd[2], idd[3], idd[4], idd[5], idd[6], idd[7], idd[8], idd[9], idd[10], idd[11],
-		imx214_af_inf, imx214_af_mac);
+			idd[0], idd[1], idd[2], idd[3], idd[4], idd[5], idd[6], idd[7], idd[8], idd[9], idd[10], idd[11],
+			imx214_af_inf, imx214_af_mac);
 
-	if(((idd[0] == 0xD) && (idd[1] == 0x4)) || ((idd[0] == 0xD) && (idd[1] == 0x1))) { /* 0D04 primax, 0D01 liteon on-semi module */
+	if (((idd[0] == 0xD) && (idd[1] == 0x4)) || ((idd[0] == 0xD) && (idd[1] == 0x1))) { /* 0D04 primax, 0D01 liteon on-semi module */
 		s_ctrl->sensordata->sensor_name = "imx215";
 		IMX214_READB(0x14, &lc8214_offset);
 		IMX214_READB(0x15, &lc8214_bias);
@@ -285,7 +306,7 @@ static int32_t imx214_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 	}
 
 /* read otp failed, use default value*/
-	if(imx214_af_mac == 0) {
+	if (imx214_af_mac == 0) {
 		imx214_af_mac = 323;
 		pr_info("%s use default mac", __func__);
 	}
@@ -296,12 +317,12 @@ static int32_t imx214_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		imx214_af_inf -= (imx214_af_mac - imx214_af_inf) / 16;
 
 	imx214_af_mac += (imx214_af_mac - imx214_af_inf) / 5; /* add more dac for marco focusing */
-	if(imx214_af_mac > 510)
+	if (imx214_af_mac > 510)
 		imx214_af_mac = 510;
 
 	pr_info("%s inf:%d mac:%d i:%d", __func__, imx214_af_inf, imx214_af_mac, i);
 
-        return 0;
+	return 0;
 }
 
 static int __init imx214_init_module(void)
@@ -309,7 +330,7 @@ static int __init imx214_init_module(void)
 	int32_t rc = 0;
 	pr_info("%s:%d\n", __func__, __LINE__);
 	rc = platform_driver_probe(&imx214_platform_driver,
-		imx214_platform_probe);
+			imx214_platform_probe);
 	if (!rc)
 		return rc;
 	pr_err("%s:%d rc %d\n", __func__, __LINE__, rc);

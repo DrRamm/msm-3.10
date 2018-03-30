@@ -1,5 +1,5 @@
 /* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -316,7 +316,7 @@ static int __init msm_led_trigger_add_driver(void)
 {
 	CDBG("called\n");
 
-	if(get_hw_version_major() == 5)
+	if (get_hw_version_major() == 5)
 		return 0;
 
 	return platform_driver_probe(&msm_led_trigger_driver,

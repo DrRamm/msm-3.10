@@ -1,5 +1,5 @@
 /* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -832,11 +832,11 @@ int msm_camera_init_gpio_pin_tbl(struct device_node *of_node,
 		rc = of_property_read_u32(of_node, "qcom,gpio-img-en", &val);
 		if (rc < 0) {
 			pr_err("%s:%d read qcom,gpio-img-en failed rc %d\n",
-				__func__, __LINE__, rc);
+					__func__, __LINE__, rc);
 			goto ERROR;
 		} else if (val >= gpio_array_size) {
 			pr_err("%s:%d qcom,gpio-img-en invalid %d\n",
-				__func__, __LINE__, val);
+					__func__, __LINE__, val);
 			goto ERROR;
 		}
 		gconf->gpio_num_info->gpio_num[SENSOR_GPIO_IMG_EN] =
@@ -850,18 +850,18 @@ int msm_camera_init_gpio_pin_tbl(struct device_node *of_node,
 		rc = of_property_read_u32(of_node, "qcom,gpio-af-pwdm", &val);
 		if (rc < 0) {
 			pr_err("%s:%d read qcom,gpio-af-pwdm failed rc %d\n",
-				__func__, __LINE__, rc);
+					__func__, __LINE__, rc);
 			goto ERROR;
 		} else if (val >= gpio_array_size) {
 			pr_err("%s:%d qcom,gpio-af-pwdm invalid %d\n",
-				__func__, __LINE__, val);
+					__func__, __LINE__, val);
 			goto ERROR;
 		}
 		gconf->gpio_num_info->gpio_num[SENSOR_GPIO_AF_PWDM] =
-			gpio_array[val];
+				gpio_array[val];
 		gconf->gpio_num_info->valid[SENSOR_GPIO_AF_PWDM] = 1;
 		CDBG("%s qcom,gpio-af-pwdm %d\n", __func__,
-			gconf->gpio_num_info->gpio_num[SENSOR_GPIO_AF_PWDM]);
+				gconf->gpio_num_info->gpio_num[SENSOR_GPIO_AF_PWDM]);
 	}
 
 	return rc;

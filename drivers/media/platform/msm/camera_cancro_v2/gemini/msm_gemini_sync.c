@@ -16,8 +16,8 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <media/msm_gemini.h>
-#include <linux/msm-bus.h>
-#include <linux/msm-bus-board.h>
+#include <mach/msm_bus.h>
+#include <mach/msm_bus_board.h>
 #include "msm_gemini_sync.h"
 #include "msm_gemini_core.h"
 #include "msm_gemini_platform.h"

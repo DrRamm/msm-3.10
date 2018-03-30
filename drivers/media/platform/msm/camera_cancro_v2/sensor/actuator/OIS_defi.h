@@ -1,10 +1,10 @@
-/////////////////////////////////////////////////////////////////////////////
-// File Name	: OIS_defi.h
-// Function		: Header file for OIS controller
-// Rule         : Use TAB 4
-//
-// Copyright(c)	Rohm Co.,Ltd. All rights reserved
-// Copyright (C) 2015 XiaoMi, Inc.
+///////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
 /***** ROHM Confidential ***************************************************/
 #ifndef OIS_DEFINITION_H
 #define OIS_DEFINITION_H
@@ -15,9 +15,9 @@
 	#define	EXT	extern
 #endif
 
-// =================================================================
-// Common
-// =================================================================
+
+
+
 #define __ON_		1
 #define _OFF_		0
 
@@ -53,9 +53,9 @@
 
 #define	_NOT_READY	0
 
-// =================================================================
-// PIC uP port assign
-// =================================================================
+
+
+
 #define _PIO_O_L_	0
 #define _PIO_O_H_	1
 #define _PIO_INP_	2
@@ -155,28 +155,28 @@
 #define _PIC_AD_5_	13
 #define _PIC_AD_6_	14
 
-// _picsig_PS_POL = _PIC_RB_8_
+
 #define _picsig_PS____	_PIC_RE_5_
 #define _picsig_TRIG__	_PIC_RE_4_
 
 #define _picsig_AF____	_PIC_RC_E_
-// _picsig_Shutr_ = _PIC_RD_1_
+
 
 #define _picsig_FPGAcs	_PIC_RB_6_
 
-// _picsig_CRNR_0 = _PIC_RD_2_
-// _picsig_CRNR_1 = _PIC_RD_1_
-// _picsig_CRNR_2 = _PIC_RC_E_
-// _picsig_CRNR_3 = _PIC_RC_D_
 
 
-// =================================================================
-// OIS controller assign
-// =================================================================
-// Slave Address
+
+
+
+
+
+
+
+
 #define _SLV_OIS_	0x0E
 
-// Packet Command OP code
+
 #define _OP_FIRM_DWNLD	0x80
 #define _OP_Periphe_RW	0x82
 #define _OP_Memory__RW	0x84
@@ -185,11 +185,11 @@
 #define _OP_PrgMem__RD	0x8A
 #define _OP_SpecialCMD	0x8C
 
-	#define _cmd_8C_EI	0x0001
-	#define _cmd_8C_DI	0x0002
-	#define _cmd_8C_STRB	0x0004
-	#define _cmd_8C_TRI_SHT	0x0008
-	#define _cmd_8C_TRI_con	0x0010
+#define _cmd_8C_EI	0x0001
+#define _cmd_8C_DI	0x0002
+#define _cmd_8C_STRB	0x0004
+#define _cmd_8C_TRI_SHT	0x0008
+#define _cmd_8C_TRI_con	0x0010
 
 #define _OP_FX_Cmnd_0	0xF0
 #define _OP_FX_Cmnd_1	0xF1
@@ -198,7 +198,7 @@
 #define _OP_FX_Cmnd_8	0xF8
 #define _OP_FX_Cmnd_A	0xFA
 
-// Peripheral Adr Mapping
+
 #define _P_00_CLK_CONTRL	0x00
 #define _P_01_CLK_PWMCNT	0x01
 #define _P_02_CLK_TMRCNT	0x02
@@ -206,33 +206,33 @@
 #define _P_04_CLK_CALDIV	0x04
 #define _P_05_CLK_CLKSEL	0x05
 #define _P_06_CLK_MONITR	0x06
-//  _P_07)
+
 #define _P_08_TRI_CNTRL_	0x08
 #define _P_09_TRI_TARGET	0x09
 #define _P_0A_TRI_PHSCNT	0x0A
-//  _P_0B)
-//  _P_0C)
-//  _P_0D)
-//  _P_0E)
-//  _P_0F)
+
+
+
+
+
 #define _P_10_I2C_SLVADR	0x10
 #define _P_11_I2C__DATA_	0x11
 #define _P_12_I2C_STSADR	0x12
 #define _P_13_I2C_MONSEL	0x13
 #define _P_14_I2C_OFSREG	0x14
-//  _P_15)
-//  _P_16)
-//  _P_17)
+
+
+
 #define _P_18_SPI_TRSNUM	0x18
 #define _P_19_SPI_CONTRL	0x19
-// _P_1A_SPI_D_000H = 0x1A
+
 #define _P_1A_SPI_D_HHHL	0x1B
 #define _P_1B_SPI_D_LHLL	0x1C
-//  _P_1B)
-//  _P_1C)
-//  _P_1D)
-//  _P_1E)
-//  _P_1F)
+
+
+
+
+
 #define _P_20_MSC_MONCTL1	0x20
 #define _P_21_MSC_MONCTL2	0x21
 #define _P_22_MSC_PORTCTL	0x22
@@ -240,7 +240,7 @@
 #define _P_24_MSC_PWMREGA	0x24
 #define _P_25_MSC_PWMREGB	0x25
 #define _P_26_MSC_SIGMON	0x26
-//  _P_27)
+
 #define _P_28_PWM_ENB_SR	0x28
 #define _P_29_PWM_FRQSEL	0x29
 #define _P_2A_PWM_SFT_YX	0x2A
@@ -265,24 +265,24 @@
 
 #define _P_3C_ADC_GAIN	0x3C
 #define _P_3D_ADC_CTL	0x3D
-//  _P_3E)
-//  _P_3F)
+
+
 #define _P_40_OUT_CH	0x40
 #define _P_41_OUT_CTL	0x41
 #define _P_42_OUT_DAC	0x42
 #define _P_43_OUT_SW	0x43
-//  _P_44)
-//  _P_45)
-//  _P_46)
-//  _P_47)
+
+
+
+
 #define _P_48_TOP_00	0x48
-//  _P_49)
-//  _P_4A)
-//  _P_4B)
-//  _P_4C)
-//  _P_4D)
-//  _P_4E)
-//  _P_4F)
+
+
+
+
+
+
+
 #define _P_50_TST_TSTCMD	0x50
 #define _P_51_TST_AF_SLP	0x51
 #define _P_52_TST_AF_OFS	0x52
@@ -294,10 +294,10 @@
 #define _P_58_TST_FIXHBR	0x58
 #define _P_59_TST_SMPPWR	0x59
 #define _P_5A_TST_MPXFIX	0x5A
-//  _P_5B_)		,0x5B
-//  _P_5C_)		,0x5C
-//  _P_5D_)		,0x5D
-//  _P_5E_)		,0x5E
+
+
+
+
 #define _P_5F_TST_INFVER	0x5F
 
 #define _P_F0_I2CnSTR	0xF0
@@ -307,7 +307,7 @@
 
 
 
-// Memory Adr Mapping
+
 #define _M_Kgx01	0x00
 #define _M_Kgx02	0x01
 #define _M_Kgx03	0x02
@@ -388,18 +388,18 @@
 #define _M_wDgx01t	0x4D
 #define _M_wDgx02t	0x4E
 #define _M_wDgx_EQ	0x4F
-// #define _M_rsv	0x50
-// #define _M_rsv	0x51
-// #define _M_rsv	0x52
-// #define _M_rsv	0x53
-// #define _M_rsv	0x54
+
+
+
+
+
 #define _M_DigGx	0x55
 #define _M_DigGy	0x56
 #define _M_CURIN	0x57
-// #define _M_rsv	0x58
-// #define _M_rsv	0x59
-// #define _M_rsv	0x5A
-// #define _M_rsv	0x5B
+
+
+
+
 #define _M_wDf00	0x5C
 #define _M_FOTRIM	0x5D
 #define _M_CUROFS	0x5E
@@ -407,25 +407,25 @@
 #define _M_wCRFED	0x60
 #define _M_wFTRGT	0x61
 #define _M_wFSUB	0x62
-// #define _M_rsv	0x63
+
 #define _M_Kf0C	0x64
 #define _M_wDf03	0x65
 #define _M_rsv	0x66
 #define _M_CUROFO	0x67
 #define _M_Kf00	0x68
 #define _M_Kf01	0x69
-#define _M_TMP_X_	0x6A		// RHM_HT 2013/11/25	Modified
-#define _M_TMP_Y_	0x6B		// RHM_HT 2013/11/25	Modified
+#define _M_TMP_X_	0x6A
+#define _M_TMP_Y_	0x6B
 #define _M_wDf01	0x6C
 #define _M_AFLPF	0x6D
-// #define _M_rsv	0x6E
-// #define _M_rsv	0x6F
-#define _M_KgxH0	0x70		// RHM_HT 2013/11/25	Modified
+
+
+#define _M_KgxH0	0x70
 #define _M_X_PEO	0x71
-#define _M_KgyH0	0x72		// RHM_HT 2013/11/25	Modified
+#define _M_KgyH0	0x72
 #define _M_Y_PEO	0x73
 #define _M_FOC_CNTRL	0x74
-// #define _M_rsv	0x75
+
 #define _M_CEFTYP	0x76
 #define _M_GYRSNS	0x77
 #define _M_SHDAC0	0x78
@@ -556,11 +556,11 @@
 #define _M_BPFMON	0xF5
 #define _M_FIRMVER	0xF6
 #define _M_OIS_STS	0xF7
-	#define _def_OIS____________BOOT	0x00
-	#define _def_OIS__while_FWdwnlod	0x01
-	#define _def_OIS__FW_NG_NG_NG_NG	0x02
-	#define _def_OIS____________FWOK	0x03
-	#define _def_OIS_main_______IDLE	0x04
+#define _def_OIS____________BOOT	0x00
+#define _def_OIS__while_FWdwnlod	0x01
+#define _def_OIS__FW_NG_NG_NG_NG	0x02
+#define _def_OIS____________FWOK	0x03
+#define _def_OIS_main_______IDLE	0x04
 #define _M_I2C_dat	0xF8
 #define _M_I2C_cmd	0xF9
 #define _M_I2C_STS	0xFA
@@ -571,11 +571,11 @@
 #define _M____tmp0	0xFF
 
 
-// =================================================================
-// Another definition
-// =================================================================
 
-// Scene parameter
+
+
+
+
 #define _SCENE_NIGHT_1	1
 #define _SCENE_NIGHT_2	2
 #define _SCENE_NIGHT_3	3
@@ -587,10 +587,9 @@
 #define _SCENE_SPORT_1	7
 #define _SCENE_SPORT_2	8
 #define _SCENE_SPORT_3	9
-
 #define _SCENE_TEST___	10
 
-// for Factory Adjustment
+
 #define _CUR100mA		0x00A0
 #define _CUR125mA		0x00C8
 #define _CUR150mA		0x00F0
@@ -605,23 +604,23 @@
 #define _CUR375mA		0x0258
 #define _CUR400mA		0x0280
 
-// #define _VHTRGT			0x0460	// 3mA * 750 = 2250mV ->1/2-> 1125mV = 1125mV/1980mV *1024=582d-512d=70d 70d*16=1120
-#define	_VHTRGT   		0x0BA2	// 3mA * 750 = 2250mV ->1/2-> 1125mV = 1125mV/1650mV *1024=698d-512d= 186d  186d*16= 2979 = 0BA3
+
+#define	_VHTRGT   		0x0BA2
 
 #define _OTHR_IN_HALPX	0x0006
 #define _OTHR_IN_HALPY	0x0008
 #define _OTHR_HXpreOUT	0x0001
 #define _OTHR_HYpreOUT	0x0002
 
-// Factory Adjustment data
+
 typedef struct{
 	OIS_UWORD	gl_CURDAT;
 	OIS_UWORD	gl_HALOFS_X;
 	OIS_UWORD	gl_HALOFS_Y;
 	OIS_UWORD	gl_HX_OFS;
 	OIS_UWORD	gl_HY_OFS;
-	OIS_UWORD	gl_PSTXOF;		// RHM_HT 2013.03.21	Change order to adjust EEP ROM map
-	OIS_UWORD	gl_PSTYOF;		// RHM_HT 2013.03.21	Change order to adjust EEP ROM map
+	OIS_UWORD	gl_PSTXOF;
+	OIS_UWORD	gl_PSTYOF;
 	OIS_UWORD	gl_GX_OFS;
 	OIS_UWORD	gl_GY_OFS;
 	OIS_UWORD	gl_KgxHG ;
@@ -629,100 +628,78 @@ typedef struct{
 	OIS_UWORD	gl_KGXG  ;
 	OIS_UWORD	gl_KGYG  ;
 
-	OIS_UWORD	gl_SFTHAL_X;	// RHM_HT 2013/11/25	Added
-	OIS_UWORD	gl_SFTHAL_Y;	// RHM_HT 2013/11/25	Added
-	OIS_UWORD	gl_TMP_X_;		// RHM_HT 2013/11/25	Added
-	OIS_UWORD	gl_TMP_Y_;		// RHM_HT 2013/11/25	Added
-	OIS_UWORD	gl_KgxH0;		// RHM_HT 2013/11/25	Added
-	OIS_UWORD	gl_KgyH0;		// RHM_HT 2013/11/25	Added
-}_FACT_ADJ;
+	OIS_UWORD	gl_SFTHAL_X;
+	OIS_UWORD	gl_SFTHAL_Y;
+	OIS_UWORD	gl_TMP_X_;
+	OIS_UWORD	gl_TMP_Y_;
+	OIS_UWORD	gl_KgxH0;
+	OIS_UWORD	gl_KgyH0;
+} _FACT_ADJ;
 
 
-// Default Parameter of FACTORY Adjust data
-// ---------------------------------------------
-EXT	const	_FACT_ADJ	FADJ_DEF
+
+
+EXT	const _FACT_ADJ	FADJ_DEF
 #ifdef	OIS_MAIN_C
 = {
-0x01bf,
-0x01e3,
-0x020a,
-0x0120,
-0x02ec,
-0x0080,
-0x007f,
-0xfd40,
-0x0460,
-0xdb3f,
-0xda4a,
-0x2d36,
-0x268c,
+	0x01bf,
+	0x01e3,
+	0x020a,
+	0x0120,
+	0x02ec,
+	0x0080,
+	0x007f,
+	0xfd40,
+	0x0460,
+	0xdb3f,
+	0xda4a,
+	0x2d36,
+	0x268c,
 
-0x01e3,
-0x020a,
-0x0000,
-0x0000,
-0xffce,
-0xfffc,
-#if 0
-	0x0200,	// gl_CURDAT;
-	0x0200,	// gl_HALOFS_X;
-	0x0200,	// gl_HALOFS_Y;
-	0x0000,	// gl_HX_OFS;
-	0x0000,	// gl_HY_OFS;
-	0x0080,	// gl_PSTXOF;		RHM_HT 2013.03.21	Change order to adjust EEP ROM map
-	0x0080,	// gl_PSTYOF;		RHM_HT 2013.03.21	Change order to adjust EEP ROM map
-	0x0000,	// gl_GX_OFS;
-	0x0000,	// gl_GY_OFS;
-
-	0x2000,	// gl_KgxHG ;		RHM_HT 2013/11/25	Modified
-	0x2000,	// gl_KgyHG ;		RHM_HT 2013/11/25	Modified
-	0x2000,	// gl_KGXG  ;		RHM_HT 2013/11/25	Modified
-	0x2000,	// gl_KGYG  ;		RHM_HT 2013/11/25	Modified
-	0x0200,	// gl_SFTHAL_X;		RHM_HT 2013/11/25	Added
-	0x0200,	// gl_SFTHAL_Y;		RHM_HT 2013/11/25	Added
-	0x0000,	// gl_TMP_X_;		RHM_HT 2013/11/25	Added
-	0x0000,	// gl_TMP_Y_;		RHM_HT 2013/11/25	Added
-	0x0000,	// gl_KgxH0;		RHM_HT 2013/11/25	Added
-	0x0000,	// gl_KgyH0;		RHM_HT 2013/11/25	Added
-#endif
+	0x01e3,
+	0x020a,
+	0x0000,
+	0x0000,
+	0xffce,
+	0xfffc,
 }
 #endif
 ;
 
-// FACTORY Adjusted data
-// These data are stored at the non-vollatile
-// memory inside of the CMOS sensor.
-// The Host ( ISP or I2C master ) read these
-// data from above memory and write to the OIS
-// controller.
-// ---------------------------------------------
+
+
+
+
+
+
+
 _FACT_ADJ	FADJ_MEM
 = {
-0x01bf,
-0x01e3,
-0x020a,
-0x0120,
-0x02ec,
-0x0080,
-0x007f,
-0xfd40,
-0x0460,
-0xdb3f,
-0xda4a,
-0x2d36,
-0x268c,
+	0x01bf,
+	0x01e3,
+	0x020a,
+	0x0120,
+	0x02ec,
+	0x0080,
+	0x007f,
+	0xfd40,
+	0x0460,
+	0xdb3f,
+	0xda4a,
+	0x2d36,
+	0x268c,
 
-0x01e3,
-0x020a,
-0x0000,
-0x0000,
-0xffce,
-0xfffc,
+	0x01e3,
+	0x020a,
+	0x0000,
+	0x0000,
+	0xffce,
+	0xfffc,
 }
 ;
 
-// Parameters for expanding OIS range
-// ---------------------------------------------
+
+
 EXT	double	p_x, q_x;
 EXT	double	p_y, q_y;
 EXT	OIS_WORD zero_X;
@@ -734,4 +711,4 @@ EXT double	alfa_Y,	beta_Y;
 
 
 #undef	EXT
-#endif	// OIS_DEFINITION_H
+#endif

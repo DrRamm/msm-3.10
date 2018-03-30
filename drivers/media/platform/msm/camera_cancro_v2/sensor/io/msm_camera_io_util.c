@@ -16,9 +16,9 @@
 #include <linux/regulator/consumer.h>
 #include <linux/io.h>
 #include <linux/err.h>
-#include <soc/qcom/camera2.h>
+#include <mach/camera2.h>
 #include <mach/gpiomux.h>
-#include <linux/msm-bus.h>
+#include <mach/msm_bus.h>
 #include "msm_camera_io_util.h"
 
 #define BUFF_SIZE_128 128
@@ -130,15 +130,13 @@ int msm_cam_clk_sel_src(struct device *dev, struct msm_cam_clk_info *clk_info,
 		if (clk_src_info[i].clk_name) {
 			mux_clk = clk_get(dev, clk_info[i].clk_name);
 			if (IS_ERR(mux_clk)) {
-				CDBG("%s get mux clk %s\n", __func__, clk_info[i].clk_name);
-				pr_err("%s get mux failed\n",
+				pr_err("%s get failed\n",
 					 clk_info[i].clk_name);
 				continue;
 			}
 			src_clk = clk_get(dev, clk_src_info[i].clk_name);
 			if (IS_ERR(src_clk)) {
-				CDBG("%s get src clk %s\n", __func__, clk_info[i].clk_name);
-				pr_err("%s get src failed\n",
+				pr_err("%s get failed\n",
 					clk_src_info[i].clk_name);
 				continue;
 			}
@@ -160,8 +158,7 @@ int msm_cam_clk_enable(struct device *dev, struct msm_cam_clk_info *clk_info,
 				clk_info[i].clk_name);
 			clk_ptr[i] = clk_get(dev, clk_info[i].clk_name);
 			if (IS_ERR(clk_ptr[i])) {
-
-				pr_err("%s get ptr failed\n", clk_info[i].clk_name);
+				pr_err("%s get failed\n", clk_info[i].clk_name);
 				rc = PTR_ERR(clk_ptr[i]);
 				goto cam_clk_get_err;
 			}
@@ -254,12 +251,6 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 		pr_err("%s:%d vreg sequence invalid\n", __func__, __LINE__);
 		return -EINVAL;
 	}
-
-	if (cam_vreg == NULL) {
-		pr_err("%s:%d cam_vreg sequence invalid\n", __func__, __LINE__);
-		return -EINVAL;
-	}
-
 	if (!num_vreg_seq)
 		num_vreg_seq = num_vreg;
 

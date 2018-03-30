@@ -15,13 +15,13 @@
 #include <linux/module.h>
 #include <linux/pm_qos.h>
 #include <linux/clk.h>
-#include <linux/clk/msm-clk.h>
+#include <mach/clk.h>
 #include <linux/io.h>
 
 #include <mach/camera.h>
-#include <linux/msm_iommu_domains.h>
-#include <linux/msm-bus.h>
-#include <linux/msm-bus-board.h>
+#include <mach/iommu_domains.h>
+#include <mach/msm_bus.h>
+#include <mach/msm_bus_board.h>
 
 #include "msm_jpeg_platform.h"
 #include "msm_jpeg_sync.h"
@@ -288,7 +288,7 @@ int msm_jpeg_platform_init(struct platform_device *pdev,
 	*base = jpeg_base;
 	*irq  = jpeg_irq;
 
-	pgmn_dev->jpeg_client = msm_ion_client_create("camera/jpeg");
+	pgmn_dev->jpeg_client = msm_ion_client_create(-1, "camera/jpeg");
 	JPEG_DBG("%s:%d] success\n", __func__, __LINE__);
 
 	pgmn_dev->state = MSM_JPEG_INIT;

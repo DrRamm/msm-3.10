@@ -522,17 +522,13 @@ static long msm_csid_subdev_ioctl(struct v4l2_subdev *sd,
 	CDBG("%s:%d id %d\n", __func__, __LINE__, csid_dev->pdev->id);
 	switch (cmd) {
 	case VIDIOC_MSM_SENSOR_GET_SUBDEV_ID:
-	CDBG("%s:%d id %d\n", __func__, __LINE__, csid_dev->pdev->id);
 		rc = msm_csid_get_subdev_id(csid_dev, arg);
 		break;
 	case VIDIOC_MSM_CSID_IO_CFG:
-	CDBG("%s:%d id %d\n", __func__, __LINE__, csid_dev->pdev->id);
 		rc = msm_csid_cmd(csid_dev, arg);
 		break;
 	case VIDIOC_MSM_CSID_RELEASE:
-	CDBG("%s:%d id %d\n", __func__, __LINE__, csid_dev->pdev->id);
 	case MSM_SD_SHUTDOWN:
-	CDBG("%s:%d id %d\n", __func__, __LINE__, csid_dev->pdev->id);
 		rc = msm_csid_release(csid_dev);
 		break;
 	default:
@@ -555,7 +551,7 @@ static const struct v4l2_subdev_ops msm_csid_subdev_ops = {
 	.core = &msm_csid_subdev_core_ops,
 };
 
-static int csid_probe(struct platform_device *pdev)
+static int __devinit csid_probe(struct platform_device *pdev)
 {
 	struct csid_device *new_csid_dev;
 	uint32_t csi_vdd_voltage = 0;
