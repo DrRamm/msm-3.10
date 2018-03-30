@@ -1,4 +1,5 @@
-/* Copyright (c) 2012-2014, 2016 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -9,6 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/firmware.h>
@@ -19,10 +21,9 @@
 #include <linux/ratelimit.h>
 #include <linux/debugfs.h>
 #include <linux/wait.h>
-#include <linux/bitops.h>
 #include <linux/mfd/wcd9xxx/core.h>
 #include <linux/mfd/wcd9xxx/wcd9xxx_registers.h>
-#include <uapi/linux/mfd/wcd9xxx/wcd9320_registers.h>
+#include <linux/mfd/wcd9xxx/wcd9320_registers.h>
 #include <linux/mfd/wcd9xxx/pdata.h>
 #include <linux/regulator/consumer.h>
 #include <sound/pcm.h>
@@ -30,18 +31,19 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/tlv.h>
+#include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/pm_runtime.h>
 #include <linux/kernel.h>
 #include <linux/gpio.h>
 #include <linux/pm_qos.h>
-#include <soc/qcom/pm.h>
-#include <linux/of_gpio.h>
-#include <asm/bootinfo.h>
+#include <linux/pm.h>
+#include <mach/cpuidle.h>
 #include "wcd9320.h"
 #include "wcd9xxx-resmgr.h"
 #include "wcd9xxx-common.h"
 #include "wcdcal-hwdep.h"
+
 
 #ifdef CONFIG_SND_SOC_TPA6130A2
 #include "tpa6130a2.h"
@@ -65,10 +67,6 @@ static atomic_t kp_taiko_priv;
 static int spkr_drv_wrnd_param_set(const char *val,
 				   const struct kernel_param *kp);
 static int spkr_drv_wrnd = 1;
-static int high_perf_mode;
-module_param(high_perf_mode, int,
-			S_IRUGO | S_IWUSR | S_IWGRP);
-MODULE_PARM_DESC(high_perf_mode, "enable/disable class AB config for hph");
 
 static struct kernel_param_ops spkr_drv_wrnd_param_ops = {
 	.set = spkr_drv_wrnd_param_set,
@@ -354,7 +352,6 @@ struct hpf_work {
 	struct taiko_priv *taiko;
 	u32 decimator;
 	u8 tx_hpf_cut_of_freq;
-	bool tx_hpf_bypass;
 	struct delayed_work dwork;
 };
 
@@ -424,8 +421,6 @@ struct taiko_priv {
 	u32 anc_slot;
 	bool anc_func;
 
-	/* cal info for codec */
-	struct fw_info *fw_data;
 	/*track taiko interface type*/
 	u8 intf_type;
 
@@ -465,8 +460,8 @@ struct taiko_priv {
 	 */
 	struct list_head reg_save_restore;
 	struct pm_qos_request pm_qos_req;
-
-	int headset_pa_en_gpio;
+	/* cal info for codec */
+	struct fw_info *fw_data;
 };
 
 static const u32 comp_shift[] = {
@@ -521,7 +516,7 @@ static const struct comp_sample_dependent_params comp_samp_params[] = {
 		/* 192 Khz */
 		.peak_det_timeout = 0x0B,
 		.rms_meter_div_fact = 0xC,
-		.rms_meter_resamp_fact = 0xA0,
+		.rms_meter_resamp_fact = 0x50,
 	},
 };
 
@@ -655,8 +650,8 @@ static int taiko_put_anc_func(struct snd_kcontrol *kcontrol,
 		snd_soc_dapm_enable_pin(dapm, "EAR PA");
 		snd_soc_dapm_enable_pin(dapm, "EAR");
 	}
-	mutex_unlock(&dapm->codec->mutex);
 	snd_soc_dapm_sync(dapm);
+	mutex_unlock(&dapm->codec->mutex);
 	return 0;
 }
 
@@ -1006,17 +1001,16 @@ static int taiko_config_compander(struct snd_soc_dapm_widget *w,
 		snd_soc_update_bits(codec,
 				    TAIKO_A_CDC_COMP0_FS_CFG + (comp * 8),
 				    0x07, rate);
-		/* Set the static gain offset for HPH Path */
-		if (comp == COMPANDER_1) {
-			if (buck_mv == WCD9XXX_CDC_BUCK_MV_2P15) {
-				snd_soc_update_bits(codec,
-					TAIKO_A_CDC_COMP0_B4_CTL + (comp * 8),
-					0x80, 0x00);
-			} else {
-				snd_soc_update_bits(codec,
+		/* Set the static gain offset */
+		if (comp == COMPANDER_1
+			&& buck_mv == WCD9XXX_CDC_BUCK_MV_1P8) {
+			snd_soc_update_bits(codec,
 					TAIKO_A_CDC_COMP0_B4_CTL + (comp * 8),
 					0x80, 0x80);
-			}
+		} else {
+			snd_soc_update_bits(codec,
+					TAIKO_A_CDC_COMP0_B4_CTL + (comp * 8),
+					0x80, 0x00);
 		}
 		/* Enable RX interpolation path compander clocks */
 		snd_soc_update_bits(codec, TAIKO_A_CDC_CLK_RX_B2_CTL,
@@ -1199,30 +1193,17 @@ static int taiko_mad_input_put(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	u8 taiko_mad_input;
-	u16 micb_int_reg, micb_4_int_reg;
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	struct snd_soc_card *card = codec->card;
-	struct taiko_priv *taiko = snd_soc_codec_get_drvdata(codec);
 	char mad_amic_input_widget[6];
 	u32 adc;
 	const char *mad_input_widget;
-	const char *source_widget = NULL;
 	u32  mic_bias_found = 0;
 	u32 i;
 	int ret = 0;
-	char *mad_input;
 
 	taiko_mad_input = ucontrol->value.integer.value[0];
 
-	if (taiko_mad_input >= ARRAY_SIZE(taiko_conn_mad_text)) {
-		dev_err(codec->dev,
-			"%s: taiko_mad_input = %d out of bounds\n",
-			__func__, taiko_mad_input);
-		return -EINVAL;
-	}
-
-
-	micb_4_int_reg = taiko->resmgr.reg_addr->micb_4_int_rbias;
 	pr_debug("%s: taiko_mad_input = %s\n", __func__,
 			taiko_conn_mad_text[taiko_mad_input]);
 
@@ -1237,14 +1218,8 @@ static int taiko_mad_input_put(struct snd_kcontrol *kcontrol,
 
 	if (strnstr(taiko_conn_mad_text[taiko_mad_input],
 				"ADC", sizeof("ADC"))) {
-		mad_input = strpbrk(taiko_conn_mad_text[taiko_mad_input],
-				"123456");
-		if (!mad_input) {
-			dev_err(codec->dev, "%s: Invalid MAD input = %s\n",
-			__func__, taiko_conn_mad_text[taiko_mad_input]);
-			return -EINVAL;
-		}
-		ret = kstrtouint(mad_input, 10, &adc);
+		ret = kstrtouint(strpbrk(taiko_conn_mad_text[taiko_mad_input]
+					, "123456"), 10, &adc);
 		if ((ret < 0) || (adc > 6)) {
 			pr_err("%s: Invalid ADC = %s\n", __func__,
 				taiko_conn_mad_text[taiko_mad_input]);
@@ -1265,34 +1240,23 @@ static int taiko_mad_input_put(struct snd_kcontrol *kcontrol,
 
 	for (i = 0; i < card->num_dapm_routes; i++) {
 
-		if (!strcmp(card->dapm_routes[i].sink, mad_input_widget)) {
+		if (!strncmp(card->dapm_routes[i].sink,
+				mad_input_widget, strlen(mad_input_widget))) {
 
-			source_widget = card->dapm_routes[i].source;
-			if (!source_widget) {
-				dev_err(codec->dev,
-					"%s: invalid source widget\n",
-					__func__);
-				return -EINVAL;
-			}
-
-			if (strnstr(source_widget,
+			if (strnstr(card->dapm_routes[i].source,
 				"MIC BIAS1", sizeof("MIC BIAS1"))) {
 				mic_bias_found = 1;
-				micb_int_reg = TAIKO_A_MICB_1_INT_RBIAS;
 				break;
-			} else if (strnstr(source_widget,
+			} else if (strnstr(card->dapm_routes[i].source,
 				"MIC BIAS2", sizeof("MIC BIAS2"))) {
 				mic_bias_found = 2;
-				micb_int_reg = TAIKO_A_MICB_2_INT_RBIAS;
 				break;
-			} else if (strnstr(source_widget,
+			} else if (strnstr(card->dapm_routes[i].source,
 				"MIC BIAS3", sizeof("MIC BIAS3"))) {
 				mic_bias_found = 3;
-				micb_int_reg = TAIKO_A_MICB_3_INT_RBIAS;
 				break;
-			} else if (strnstr(source_widget,
+			} else if (strnstr(card->dapm_routes[i].source,
 				"MIC BIAS4", sizeof("MIC BIAS4"))) {
-				micb_int_reg = micb_4_int_reg;
 				mic_bias_found = 4;
 				break;
 			}
@@ -1308,29 +1272,6 @@ static int taiko_mad_input_put(struct snd_kcontrol *kcontrol,
 					0x0F, taiko_mad_input);
 		snd_soc_update_bits(codec, TAIKO_A_MAD_ANA_CTRL,
 					0x07, mic_bias_found);
-
-		/* Setup internal micbias */
-		if (strnstr(source_widget, "Internal1",
-			    strlen(source_widget)))
-			snd_soc_update_bits(codec,
-					    micb_int_reg,
-					    0xE0, 0xE0);
-		else if (strnstr(source_widget, "Internal2",
-				 strlen(source_widget)))
-			snd_soc_update_bits(codec,
-					    micb_int_reg,
-					    0x1C, 0x1C);
-		else if (strnstr(source_widget, "Internal3",
-				 strlen(source_widget)))
-			snd_soc_update_bits(codec,
-					    micb_int_reg,
-					    0x3, 0x3);
-		else
-			/*
-			 *  If not internal, make sure to write the
-			 *  register to default value
-			 */
-			snd_soc_write(codec, micb_int_reg, 0x24);
 		return 0;
 	} else {
 		pr_err("%s: mic bias source not found for input = %s\n",
@@ -1339,107 +1280,61 @@ static int taiko_mad_input_put(struct snd_kcontrol *kcontrol,
 	}
 }
 
-static int taiko_tx_hpf_bypass_get(struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
-{
-	u32	tx_index;
-
-	tx_index = (u32)kcontrol->private_value;
-
-	if (tx_index > NUM_DECIMATORS) {
-		pr_err("%s: Invalid TX decimator %d\n", __func__,
-			   tx_index);
-		return -EINVAL;
-	}
-
-	ucontrol->value.integer.value[0] =
-		tx_hpf_work[tx_index-1].tx_hpf_bypass;
-
-	return 0;
-}
-
-static int taiko_tx_hpf_bypass_put(struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
-{
-	bool tx_hpf_bypass_cfg;
-	u32	tx_index;
-
-	tx_hpf_bypass_cfg = (bool)ucontrol->value.integer.value[0];
-
-	pr_debug("%s: tx_hpf_bypass = %d\n", __func__,
-			tx_hpf_bypass_cfg);
-
-	tx_index = (u32)kcontrol->private_value;
-
-	if (tx_index > NUM_DECIMATORS) {
-		pr_err("%s: Invalid TX decimator %d\n", __func__,
-			   tx_index);
-		return -EINVAL;
-	}
-	if (tx_hpf_work[tx_index-1].tx_hpf_bypass != tx_hpf_bypass_cfg)
-		tx_hpf_work[tx_index-1].tx_hpf_bypass = tx_hpf_bypass_cfg;
-
-	pr_debug("%s: Set TX%d HPF bypass configuration %d",
-			 __func__, tx_index,
-			 tx_hpf_work[tx_index-1].tx_hpf_bypass);
-
-	return 0;
-}
 
 static const struct snd_kcontrol_new taiko_snd_controls[] = {
 
-	SOC_SINGLE_SX_TLV("RX1 Digital Volume", TAIKO_A_CDC_RX1_VOL_CTL_B2_CTL,
-		0, -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("RX2 Digital Volume", TAIKO_A_CDC_RX2_VOL_CTL_B2_CTL,
-		0, -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("RX3 Digital Volume", TAIKO_A_CDC_RX3_VOL_CTL_B2_CTL,
-		0, -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("RX4 Digital Volume", TAIKO_A_CDC_RX4_VOL_CTL_B2_CTL,
-		0, -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("RX5 Digital Volume", TAIKO_A_CDC_RX5_VOL_CTL_B2_CTL,
-		0, -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("RX6 Digital Volume", TAIKO_A_CDC_RX6_VOL_CTL_B2_CTL,
-		0, -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("RX7 Digital Volume", TAIKO_A_CDC_RX7_VOL_CTL_B2_CTL,
-		0, -84, 40, digital_gain),
+	SOC_SINGLE_S8_TLV("RX1 Digital Volume", TAIKO_A_CDC_RX1_VOL_CTL_B2_CTL,
+		-84, 40, digital_gain),
+	SOC_SINGLE_S8_TLV("RX2 Digital Volume", TAIKO_A_CDC_RX2_VOL_CTL_B2_CTL,
+		-84, 40, digital_gain),
+	SOC_SINGLE_S8_TLV("RX3 Digital Volume", TAIKO_A_CDC_RX3_VOL_CTL_B2_CTL,
+		-84, 40, digital_gain),
+	SOC_SINGLE_S8_TLV("RX4 Digital Volume", TAIKO_A_CDC_RX4_VOL_CTL_B2_CTL,
+		-84, 40, digital_gain),
+	SOC_SINGLE_S8_TLV("RX5 Digital Volume", TAIKO_A_CDC_RX5_VOL_CTL_B2_CTL,
+		-84, 40, digital_gain),
+	SOC_SINGLE_S8_TLV("RX6 Digital Volume", TAIKO_A_CDC_RX6_VOL_CTL_B2_CTL,
+		-84, 40, digital_gain),
+	SOC_SINGLE_S8_TLV("RX7 Digital Volume", TAIKO_A_CDC_RX7_VOL_CTL_B2_CTL,
+		-84, 40, digital_gain),
 
-	SOC_SINGLE_SX_TLV("DEC1 Volume", TAIKO_A_CDC_TX1_VOL_CTL_GAIN, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("DEC2 Volume", TAIKO_A_CDC_TX2_VOL_CTL_GAIN, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("DEC3 Volume", TAIKO_A_CDC_TX3_VOL_CTL_GAIN, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("DEC4 Volume", TAIKO_A_CDC_TX4_VOL_CTL_GAIN, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("DEC5 Volume", TAIKO_A_CDC_TX5_VOL_CTL_GAIN, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("DEC6 Volume", TAIKO_A_CDC_TX6_VOL_CTL_GAIN, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("DEC7 Volume", TAIKO_A_CDC_TX7_VOL_CTL_GAIN, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("DEC8 Volume", TAIKO_A_CDC_TX8_VOL_CTL_GAIN, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("DEC9 Volume", TAIKO_A_CDC_TX9_VOL_CTL_GAIN, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("DEC10 Volume", TAIKO_A_CDC_TX10_VOL_CTL_GAIN, 0,
-					  -84, 40, digital_gain),
+	SOC_SINGLE_S8_TLV("DEC1 Volume", TAIKO_A_CDC_TX1_VOL_CTL_GAIN, -84, 40,
+		digital_gain),
+	SOC_SINGLE_S8_TLV("DEC2 Volume", TAIKO_A_CDC_TX2_VOL_CTL_GAIN, -84, 40,
+		digital_gain),
+	SOC_SINGLE_S8_TLV("DEC3 Volume", TAIKO_A_CDC_TX3_VOL_CTL_GAIN, -84, 40,
+		digital_gain),
+	SOC_SINGLE_S8_TLV("DEC4 Volume", TAIKO_A_CDC_TX4_VOL_CTL_GAIN, -84, 40,
+		digital_gain),
+	SOC_SINGLE_S8_TLV("DEC5 Volume", TAIKO_A_CDC_TX5_VOL_CTL_GAIN, -84, 40,
+		digital_gain),
+	SOC_SINGLE_S8_TLV("DEC6 Volume", TAIKO_A_CDC_TX6_VOL_CTL_GAIN, -84, 40,
+		digital_gain),
+	SOC_SINGLE_S8_TLV("DEC7 Volume", TAIKO_A_CDC_TX7_VOL_CTL_GAIN, -84, 40,
+		digital_gain),
+	SOC_SINGLE_S8_TLV("DEC8 Volume", TAIKO_A_CDC_TX8_VOL_CTL_GAIN, -84, 40,
+		digital_gain),
+	SOC_SINGLE_S8_TLV("DEC9 Volume", TAIKO_A_CDC_TX9_VOL_CTL_GAIN, -84, 40,
+		digital_gain),
+	SOC_SINGLE_S8_TLV("DEC10 Volume", TAIKO_A_CDC_TX10_VOL_CTL_GAIN, -84,
+		40, digital_gain),
 
-	SOC_SINGLE_SX_TLV("IIR1 INP1 Volume", TAIKO_A_CDC_IIR1_GAIN_B1_CTL, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("IIR1 INP2 Volume", TAIKO_A_CDC_IIR1_GAIN_B2_CTL, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("IIR1 INP3 Volume", TAIKO_A_CDC_IIR1_GAIN_B3_CTL, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("IIR1 INP4 Volume", TAIKO_A_CDC_IIR1_GAIN_B4_CTL, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("IIR2 INP1 Volume", TAIKO_A_CDC_IIR2_GAIN_B1_CTL, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("IIR2 INP2 Volume", TAIKO_A_CDC_IIR2_GAIN_B2_CTL, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("IIR2 INP3 Volume", TAIKO_A_CDC_IIR2_GAIN_B3_CTL, 0,
-					  -84, 40, digital_gain),
-	SOC_SINGLE_SX_TLV("IIR2 INP4 Volume", TAIKO_A_CDC_IIR2_GAIN_B4_CTL, 0,
-					  -84, 40, digital_gain),
+	SOC_SINGLE_S8_TLV("IIR1 INP1 Volume", TAIKO_A_CDC_IIR1_GAIN_B1_CTL, -84,
+		40, digital_gain),
+	SOC_SINGLE_S8_TLV("IIR1 INP2 Volume", TAIKO_A_CDC_IIR1_GAIN_B2_CTL, -84,
+		40, digital_gain),
+	SOC_SINGLE_S8_TLV("IIR1 INP3 Volume", TAIKO_A_CDC_IIR1_GAIN_B3_CTL, -84,
+		40, digital_gain),
+	SOC_SINGLE_S8_TLV("IIR1 INP4 Volume", TAIKO_A_CDC_IIR1_GAIN_B4_CTL, -84,
+		40, digital_gain),
+	SOC_SINGLE_S8_TLV("IIR2 INP1 Volume", TAIKO_A_CDC_IIR2_GAIN_B1_CTL, -84,
+		40, digital_gain),
+	SOC_SINGLE_S8_TLV("IIR2 INP2 Volume", TAIKO_A_CDC_IIR2_GAIN_B2_CTL, -84,
+		40, digital_gain),
+	SOC_SINGLE_S8_TLV("IIR2 INP3 Volume", TAIKO_A_CDC_IIR2_GAIN_B3_CTL, -84,
+		40, digital_gain),
+	SOC_SINGLE_S8_TLV("IIR2 INP4 Volume", TAIKO_A_CDC_IIR2_GAIN_B4_CTL, -84,
+		40, digital_gain),
 
 	SOC_SINGLE_EXT("ANC Slot", SND_SOC_NOPM, 0, 100, 0, taiko_get_anc_slot,
 		taiko_put_anc_slot),
@@ -1457,36 +1352,16 @@ static const struct snd_kcontrol_new taiko_snd_controls[] = {
 	SOC_ENUM("TX9 HPF cut off", cf_dec9_enum),
 	SOC_ENUM("TX10 HPF cut off", cf_dec10_enum),
 
-	SOC_SINGLE_BOOL_EXT("TX1 HPF Switch", 1,
-				taiko_tx_hpf_bypass_get,
-				taiko_tx_hpf_bypass_put),
-	SOC_SINGLE_BOOL_EXT("TX2 HPF Switch", 2,
-				taiko_tx_hpf_bypass_get,
-				taiko_tx_hpf_bypass_put),
-	SOC_SINGLE_BOOL_EXT("TX3 HPF Switch", 3,
-				taiko_tx_hpf_bypass_get,
-				taiko_tx_hpf_bypass_put),
-	SOC_SINGLE_BOOL_EXT("TX4 HPF Switch", 4,
-				taiko_tx_hpf_bypass_get,
-				taiko_tx_hpf_bypass_put),
-	SOC_SINGLE_BOOL_EXT("TX5 HPF Switch", 5,
-				taiko_tx_hpf_bypass_get,
-				taiko_tx_hpf_bypass_put),
-	SOC_SINGLE_BOOL_EXT("TX6 HPF Switch", 6,
-				taiko_tx_hpf_bypass_get,
-				taiko_tx_hpf_bypass_put),
-	SOC_SINGLE_BOOL_EXT("TX7 HPF Switch", 7,
-				taiko_tx_hpf_bypass_get,
-				taiko_tx_hpf_bypass_put),
-	SOC_SINGLE_BOOL_EXT("TX8 HPF Switch", 8,
-				taiko_tx_hpf_bypass_get,
-				taiko_tx_hpf_bypass_put),
-	SOC_SINGLE_BOOL_EXT("TX9 HPF Switch", 9,
-				taiko_tx_hpf_bypass_get,
-				taiko_tx_hpf_bypass_put),
-	SOC_SINGLE_BOOL_EXT("TX10 HPF Switch", 10,
-				taiko_tx_hpf_bypass_get,
-				taiko_tx_hpf_bypass_put),
+	SOC_SINGLE("TX1 HPF Switch", TAIKO_A_CDC_TX1_MUX_CTL, 3, 1, 0),
+	SOC_SINGLE("TX2 HPF Switch", TAIKO_A_CDC_TX2_MUX_CTL, 3, 1, 0),
+	SOC_SINGLE("TX3 HPF Switch", TAIKO_A_CDC_TX3_MUX_CTL, 3, 1, 0),
+	SOC_SINGLE("TX4 HPF Switch", TAIKO_A_CDC_TX4_MUX_CTL, 3, 1, 0),
+	SOC_SINGLE("TX5 HPF Switch", TAIKO_A_CDC_TX5_MUX_CTL, 3, 1, 0),
+	SOC_SINGLE("TX6 HPF Switch", TAIKO_A_CDC_TX6_MUX_CTL, 3, 1, 0),
+	SOC_SINGLE("TX7 HPF Switch", TAIKO_A_CDC_TX7_MUX_CTL, 3, 1, 0),
+	SOC_SINGLE("TX8 HPF Switch", TAIKO_A_CDC_TX8_MUX_CTL, 3, 1, 0),
+	SOC_SINGLE("TX9 HPF Switch", TAIKO_A_CDC_TX9_MUX_CTL, 3, 1, 0),
+	SOC_SINGLE("TX10 HPF Switch", TAIKO_A_CDC_TX10_MUX_CTL, 3, 1, 0),
 
 	SOC_SINGLE("RX1 HPF Switch", TAIKO_A_CDC_RX1_B5_CTL, 2, 1, 0),
 	SOC_SINGLE("RX2 HPF Switch", TAIKO_A_CDC_RX2_B5_CTL, 2, 1, 0),
@@ -1783,7 +1658,7 @@ static const char * const dec7_mux_text[] = {
 };
 
 static const char * const dec8_mux_text[] = {
-	"ZERO", "DMIC2", "DMIC5", "ADC2", "ADC5", "ANC1_FB", "ANC2_FB",
+	"ZERO", "DMIC2", "DMIC5", "ADC2", "ADC5",
 };
 
 static const char * const dec9_mux_text[] = {
@@ -2103,7 +1978,6 @@ static int wcd9320_put_dec_enum(struct snd_kcontrol *kcontrol,
 	u16 tx_mux_ctl_reg;
 	u8 adc_dmic_sel = 0x0;
 	int ret = 0;
-	char *dec;
 
 	if (ucontrol->value.enumerated.item[0] > e->max - 1)
 		return -EINVAL;
@@ -2122,14 +1996,8 @@ static int wcd9320_put_dec_enum(struct snd_kcontrol *kcontrol,
 		ret =  -EINVAL;
 		goto out;
 	}
-	dec = strpbrk(dec_name, "123456789");
-	if (!dec) {
-		dev_err(w->dapm->dev, "%s: decimator index not found\n",
-			__func__);
-		ret =  -EINVAL;
-		goto out;
-	}
-	ret = kstrtouint(dec, 10, &decimator);
+
+	ret = kstrtouint(strpbrk(dec_name, "123456789"), 10, &decimator);
 	if (ret < 0) {
 		pr_err("%s: Invalid decimator = %s\n", __func__, dec_name);
 		ret =  -EINVAL;
@@ -2394,9 +2262,9 @@ static int slim_tx_mixer_put(struct snd_kcontrol *kcontrol,
 	pr_debug("%s: name %s sname %s updated value %u shift %d\n", __func__,
 		widget->name, widget->sname, widget->value, widget->shift);
 
-	mutex_unlock(&codec->mutex);
 	snd_soc_dapm_mixer_update_power(widget, kcontrol, enable);
 
+	mutex_unlock(&codec->mutex);
 	return 0;
 }
 
@@ -2484,9 +2352,9 @@ static int slim_rx_mux_put(struct snd_kcontrol *kcontrol,
 		goto err;
 	}
 rtn:
-	mutex_unlock(&codec->mutex);
-	snd_soc_dapm_mux_update_power(widget, kcontrol, widget->value, e);
+	snd_soc_dapm_mux_update_power(widget, kcontrol, 1, widget->value, e);
 
+	mutex_unlock(&codec->mutex);
 	return 0;
 err:
 	mutex_unlock(&codec->mutex);
@@ -2513,53 +2381,7 @@ static const struct snd_kcontrol_new slim_rx_mux[TAIKO_RX_MAX] = {
 			  slim_rx_mux_get, slim_rx_mux_put),
 };
 
-static const struct snd_kcontrol_new aif1_cap_mixer[] = {
-	SOC_SINGLE_EXT("SLIM TX1", SND_SOC_NOPM, TAIKO_TX1, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX2", SND_SOC_NOPM, TAIKO_TX2, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX3", SND_SOC_NOPM, TAIKO_TX3, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX4", SND_SOC_NOPM, TAIKO_TX4, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX5", SND_SOC_NOPM, TAIKO_TX5, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX6", SND_SOC_NOPM, TAIKO_TX6, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX7", SND_SOC_NOPM, TAIKO_TX7, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX8", SND_SOC_NOPM, TAIKO_TX8, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX9", SND_SOC_NOPM, TAIKO_TX9, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX10", SND_SOC_NOPM, TAIKO_TX10, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-};
-
-static const struct snd_kcontrol_new aif2_cap_mixer[] = {
-	SOC_SINGLE_EXT("SLIM TX1", SND_SOC_NOPM, TAIKO_TX1, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX2", SND_SOC_NOPM, TAIKO_TX2, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX3", SND_SOC_NOPM, TAIKO_TX3, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX4", SND_SOC_NOPM, TAIKO_TX4, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX5", SND_SOC_NOPM, TAIKO_TX5, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX6", SND_SOC_NOPM, TAIKO_TX6, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX7", SND_SOC_NOPM, TAIKO_TX7, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX8", SND_SOC_NOPM, TAIKO_TX8, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX9", SND_SOC_NOPM, TAIKO_TX9, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-	SOC_SINGLE_EXT("SLIM TX10", SND_SOC_NOPM, TAIKO_TX10, 1, 0,
-			slim_tx_mixer_get, slim_tx_mixer_put),
-};
-
-static const struct snd_kcontrol_new aif3_cap_mixer[] = {
+static const struct snd_kcontrol_new aif_cap_mixer[] = {
 	SOC_SINGLE_EXT("SLIM TX1", SND_SOC_NOPM, TAIKO_TX1, 1, 0,
 			slim_tx_mixer_get, slim_tx_mixer_put),
 	SOC_SINGLE_EXT("SLIM TX2", SND_SOC_NOPM, TAIKO_TX2, 1, 0,
@@ -2798,14 +2620,8 @@ static int taiko_codec_enable_dmic(struct snd_soc_dapm_widget *w,
 	s32 *dmic_clk_cnt;
 	unsigned int dmic;
 	int ret;
-	char *wname;
 
-	wname = strpbrk(w->name, "123456");
-	if (!wname) {
-		dev_err(codec->dev, "%s: widget not found\n", __func__);
-		return -EINVAL;
-	}
-	ret = kstrtouint(wname, 10, &dmic);
+	ret = kstrtouint(strpbrk(w->name, "123456"), 10, &dmic);
 	if (ret < 0) {
 		pr_err("%s: Invalid DMIC line on the codec\n", __func__);
 		return -EINVAL;
@@ -2878,18 +2694,19 @@ static int taiko_codec_config_mad(struct snd_soc_codec *codec)
 	const char *filename = TAIKO_MAD_AUDIO_FIRMWARE_PATH;
 	struct taiko_priv *taiko = snd_soc_codec_get_drvdata(codec);
 	size_t cal_size;
-	int i = 0;
 
 	pr_debug("%s: enter\n", __func__);
 	/* wakeup for codec calibration access */
+	pm_qos_add_request(&taiko->pm_qos_req,
+			   PM_QOS_CPU_DMA_LATENCY,
+			   PM_QOS_DEFAULT_VALUE);
 	pm_qos_update_request(&taiko->pm_qos_req,
 			      msm_cpuidle_get_deep_idle_latency());
 	if (!taiko->fw_data) {
 		dev_err(codec->dev, "%s: invalid cal data\n",
-				__func__);
+				 __func__);
 		return -ENODEV;
 	}
-
 	hwdep_cal = wcdcal_get_fw_cal(taiko->fw_data, WCD9XXX_MAD_CAL);
 	if (hwdep_cal) {
 		data = hwdep_cal->data;
@@ -2946,15 +2763,7 @@ static int taiko_codec_config_mad(struct snd_soc_codec *codec)
 		      mad_cal->audio_info.rms_threshold_lsb);
 	snd_soc_write(codec, TAIKO_A_CDC_MAD_AUDIO_CTL_6,
 		      mad_cal->audio_info.rms_threshold_msb);
-	for (i = 0; i < ARRAY_SIZE(mad_cal->audio_info.iir_coefficients);
-	     i++) {
-		snd_soc_update_bits(codec, TAIKO_A_CDC_MAD_AUDIO_IIR_CTL_PTR,
-				    0x3F, i);
-		snd_soc_write(codec, TAIKO_A_CDC_MAD_AUDIO_IIR_CTL_VAL,
-			      mad_cal->audio_info.iir_coefficients[i]);
-		dev_dbg(codec->dev, "%s:MAD Audio IIR Coef[%d] = 0X%x",
-			__func__, i, mad_cal->audio_info.iir_coefficients[i]);
-	}
+
 
 	/* Beacon */
 	snd_soc_write(codec, TAIKO_A_CDC_MAD_BEACON_CTL_8,
@@ -2983,11 +2792,12 @@ static int taiko_codec_config_mad(struct snd_soc_codec *codec)
 		      mad_cal->ultrasound_info.rms_threshold_msb);
 
 	pr_debug("%s: leave ret %d\n", __func__, ret);
+	pm_qos_update_request(&taiko->pm_qos_req,
+			      PM_QOS_DEFAULT_VALUE);
+	pm_qos_remove_request(&taiko->pm_qos_req);
 err:
 	if (!hwdep_cal)
 		release_firmware(fw);
-	pm_qos_update_request(&taiko->pm_qos_req,
-			      PM_QOS_DEFAULT_VALUE);
 	return ret;
 }
 
@@ -2996,8 +2806,40 @@ static int taiko_codec_enable_mad(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_codec *codec = w->codec;
 	int ret = 0;
+	u8 mad_con;
+	u16 txfe_reg;
+	u8 txfe_shift;
 
 	pr_debug("%s %d\n", __func__, event);
+
+	mad_con = snd_soc_read(codec, TAIKO_A_CDC_CONN_MAD) & 0x0F;
+
+	switch (mad_con) {
+	case 1:
+		txfe_reg = TAIKO_A_TX_1_2_TXFE_CLKDIV;
+		txfe_shift = 0;
+		break;
+	case 2:
+		txfe_reg = TAIKO_A_TX_1_2_TXFE_CLKDIV;
+		txfe_shift = 4;
+		break;
+	case 3:
+		txfe_reg = TAIKO_A_TX_3_4_TXFE_CKDIV;
+		txfe_shift = 0;
+		break;
+	case 4:
+		txfe_reg = TAIKO_A_TX_3_4_TXFE_CKDIV;
+		txfe_shift = 4;
+		break;
+	case 5:
+		txfe_reg = TAIKO_A_TX_5_6_TXFE_CKDIV;
+		txfe_shift = 0;
+		break;
+	case 6:
+		txfe_reg = TAIKO_A_TX_5_6_TXFE_CKDIV;
+		txfe_shift = 4;
+		break;
+	}
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		ret = taiko_codec_config_mad(codec);
@@ -3005,8 +2847,19 @@ static int taiko_codec_enable_mad(struct snd_soc_dapm_widget *w,
 			pr_err("%s: Failed to config MAD\n", __func__);
 			break;
 		}
+		if (mad_con >= 1 && mad_con <= 6)
+			snd_soc_update_bits(codec, txfe_reg,
+					(0x0F << txfe_shift),
+					(0x08 << txfe_shift));
+		break;
+	case SND_SOC_DAPM_POST_PMD:
+		if (mad_con >= 1 && mad_con <= 6)
+			snd_soc_update_bits(codec, txfe_reg,
+					(0x0F << txfe_shift),
+					(0x05 << txfe_shift));
 		break;
 	}
+
 	return ret;
 }
 
@@ -3070,12 +2923,6 @@ static int taiko_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 			snd_soc_update_bits(codec, micb_int_reg, 0x1C, 0x1C);
 		else if (strnstr(w->name, internal3_text, 30))
 			snd_soc_update_bits(codec, micb_int_reg, 0x3, 0x3);
-		else
-			/*
-			 *  If not internal, make sure to write the
-			 *  register to default value
-			 */
-			snd_soc_write(codec, micb_int_reg, 0x24);
 
 		if (taiko->mbhc_started && micb_ctl_reg == TAIKO_A_MICB_2_CTL) {
 			if (++taiko->micb_2_users == 1) {
@@ -3212,7 +3059,7 @@ static int taiko_codec_enable_dec(struct snd_soc_dapm_widget *w,
 	u16 dec_reset_reg, tx_vol_ctl_reg, tx_mux_ctl_reg;
 	u8 dec_hpf_cut_of_freq;
 	int offset;
-	char *dec;
+
 
 	pr_debug("%s %d\n", __func__, event);
 
@@ -3229,15 +3076,7 @@ static int taiko_codec_enable_dec(struct snd_soc_dapm_widget *w,
 		goto out;
 	}
 
-	dec = strpbrk(dec_name, "123456789");
-	if (!dec) {
-		dev_err(codec->dev, "%s: decimator index not found\n",
-			__func__);
-		ret =  -EINVAL;
-		goto out;
-	}
-
-	ret = kstrtouint(dec, 10, &decimator);
+	ret = kstrtouint(strpbrk(dec_name, "123456789"), 10, &decimator);
 	if (ret < 0) {
 		pr_err("%s: Invalid decimator = %s\n", __func__, dec_name);
 		ret =  -EINVAL;
@@ -3271,29 +3110,22 @@ static int taiko_codec_enable_dec(struct snd_soc_dapm_widget *w,
 			1 << w->shift);
 		snd_soc_update_bits(codec, dec_reset_reg, 1 << w->shift, 0x0);
 
-		pr_debug("%s: decimator = %u, bypass = %d\n", __func__,
-			decimator, tx_hpf_work[decimator - 1].tx_hpf_bypass);
-		if (tx_hpf_work[decimator - 1].tx_hpf_bypass != true) {
-			dec_hpf_cut_of_freq = snd_soc_read(codec,
-							tx_mux_ctl_reg);
+		dec_hpf_cut_of_freq = snd_soc_read(codec, tx_mux_ctl_reg);
 
-			dec_hpf_cut_of_freq = (dec_hpf_cut_of_freq & 0x30) >> 4;
+		dec_hpf_cut_of_freq = (dec_hpf_cut_of_freq & 0x30) >> 4;
 
-			tx_hpf_work[decimator - 1].tx_hpf_cut_of_freq =
-				dec_hpf_cut_of_freq;
+		tx_hpf_work[decimator - 1].tx_hpf_cut_of_freq =
+			dec_hpf_cut_of_freq;
 
-			if ((dec_hpf_cut_of_freq != CF_MIN_3DB_150HZ)) {
+		if ((dec_hpf_cut_of_freq != CF_MIN_3DB_150HZ)) {
 
-				/* set cut of freq to CF_MIN_3DB_150HZ (0x1); */
-				snd_soc_update_bits(codec, tx_mux_ctl_reg, 0x30,
-							CF_MIN_3DB_150HZ << 4);
-			}
+			/* set cut of freq to CF_MIN_3DB_150HZ (0x1); */
+			snd_soc_update_bits(codec, tx_mux_ctl_reg, 0x30,
+					    CF_MIN_3DB_150HZ << 4);
+		}
 
-			/* enable HPF */
-			snd_soc_update_bits(codec, tx_mux_ctl_reg , 0x08, 0x00);
-		} else
-			/* bypass HPF */
-			snd_soc_update_bits(codec, tx_mux_ctl_reg , 0x08, 0x08);
+		/* enable HPF */
+		snd_soc_update_bits(codec, tx_mux_ctl_reg , 0x08, 0x00);
 
 		break;
 
@@ -3302,9 +3134,8 @@ static int taiko_codec_enable_dec(struct snd_soc_dapm_widget *w,
 		/* Disable TX digital mute */
 		snd_soc_update_bits(codec, tx_vol_ctl_reg, 0x01, 0x00);
 
-		if ((tx_hpf_work[decimator - 1].tx_hpf_cut_of_freq !=
-				CF_MIN_3DB_150HZ) &&
-			(tx_hpf_work[decimator - 1].tx_hpf_bypass != true)) {
+		if (tx_hpf_work[decimator - 1].tx_hpf_cut_of_freq !=
+				CF_MIN_3DB_150HZ) {
 
 			schedule_delayed_work(&tx_hpf_work[decimator - 1].dwork,
 					msecs_to_jiffies(300));
@@ -3512,18 +3343,10 @@ static int taiko_hphl_dac_event(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_PRE_PMU:
 		snd_soc_update_bits(codec, TAIKO_A_CDC_CLK_RDAC_CLK_EN_CTL,
 							0x02, 0x02);
-		if (!high_perf_mode) {
-			wcd9xxx_clsh_fsm(codec, &taiko_p->clsh_d,
+		wcd9xxx_clsh_fsm(codec, &taiko_p->clsh_d,
 						 WCD9XXX_CLSH_STATE_HPHL,
 						 WCD9XXX_CLSH_REQ_ENABLE,
 						 WCD9XXX_CLSH_EVENT_PRE_DAC);
-		} else {
-			wcd9xxx_enable_high_perf_mode(codec, &taiko_p->clsh_d,
-						WCD9XXX_NON_UHQA_MODE,
-						WCD9XXX_CLSAB_STATE_HPHL,
-						WCD9XXX_CLSAB_REQ_ENABLE);
-		}
-
 		ret = wcd9xxx_mbhc_get_impedance(&taiko_p->mbhc,
 					&impedl, &impedr);
 		if (!ret)
@@ -3553,18 +3376,10 @@ static int taiko_hphr_dac_event(struct snd_soc_dapm_widget *w,
 		snd_soc_update_bits(codec, TAIKO_A_CDC_CLK_RDAC_CLK_EN_CTL,
 							0x04, 0x04);
 		snd_soc_update_bits(codec, w->reg, 0x40, 0x40);
-
-		if (!high_perf_mode) {
-			wcd9xxx_clsh_fsm(codec, &taiko_p->clsh_d,
+		wcd9xxx_clsh_fsm(codec, &taiko_p->clsh_d,
 						 WCD9XXX_CLSH_STATE_HPHR,
 						 WCD9XXX_CLSH_REQ_ENABLE,
 						 WCD9XXX_CLSH_EVENT_PRE_DAC);
-		} else {
-			wcd9xxx_enable_high_perf_mode(codec, &taiko_p->clsh_d,
-						WCD9XXX_NON_UHQA_MODE,
-						WCD9XXX_CLSAB_STATE_HPHR,
-						WCD9XXX_CLSAB_REQ_ENABLE);
-		}
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		snd_soc_update_bits(codec, TAIKO_A_CDC_CLK_RDAC_CLK_EN_CTL,
@@ -3582,7 +3397,7 @@ static int taiko_codec_enable_anc(struct snd_soc_dapm_widget *w,
 	const char *filename;
 	const struct firmware *fw;
 	int i;
-	int ret = 0;
+	int ret =0;
 	int num_anc_slots;
 	struct wcd9xxx_anc_header *anc_head;
 	struct taiko_priv *taiko = snd_soc_codec_get_drvdata(codec);
@@ -3595,13 +3410,13 @@ static int taiko_codec_enable_anc(struct snd_soc_dapm_widget *w,
 	size_t cal_size;
 	const void *data;
 
+
 	if (taiko->anc_func == 0)
 		return 0;
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		filename = "wcd9320/wcd9320_anc.bin";
-
 		hwdep_cal = wcdcal_get_fw_cal(taiko->fw_data, WCD9XXX_ANC_CAL);
 		if (hwdep_cal) {
 			data = hwdep_cal->data;
@@ -3622,11 +3437,12 @@ static int taiko_codec_enable_anc(struct snd_soc_dapm_widget *w,
 			data = fw->data;
 			cal_size = fw->size;
 			dev_dbg(codec->dev, "%s: using request_firmware calibration\n",
-				__func__);
+					 __func__);
+
 		}
+
 		if (cal_size < sizeof(struct wcd9xxx_anc_header)) {
 			dev_err(codec->dev, "Not enough data\n");
-			ret = -ENOMEM;
 			goto err;
 		}
 
@@ -3697,6 +3513,7 @@ err:
 	if (!hwdep_cal)
 		release_firmware(fw);
 	return ret;
+
 }
 
 static int taiko_hph_pa_event(struct snd_soc_dapm_widget *w,
@@ -3706,7 +3523,6 @@ static int taiko_hph_pa_event(struct snd_soc_dapm_widget *w,
 	struct taiko_priv *taiko = snd_soc_codec_get_drvdata(codec);
 	enum wcd9xxx_notify_event e_pre_on, e_post_off;
 	u8 req_clsh_state;
-	u8 req_clsab_state;
 	u32 pa_settle_time = TAIKO_HPH_PA_SETTLE_COMP_OFF;
 
 	pr_debug("%s: %s event = %d\n", __func__, w->name, event);
@@ -3714,12 +3530,10 @@ static int taiko_hph_pa_event(struct snd_soc_dapm_widget *w,
 		e_pre_on = WCD9XXX_EVENT_PRE_HPHL_PA_ON;
 		e_post_off = WCD9XXX_EVENT_POST_HPHL_PA_OFF;
 		req_clsh_state = WCD9XXX_CLSH_STATE_HPHL;
-		req_clsab_state = WCD9XXX_CLSAB_STATE_HPHL;
 	} else if (w->shift == 4) {
 		e_pre_on = WCD9XXX_EVENT_PRE_HPHR_PA_ON;
 		e_post_off = WCD9XXX_EVENT_POST_HPHR_PA_OFF;
 		req_clsh_state = WCD9XXX_CLSH_STATE_HPHR;
-		req_clsab_state = WCD9XXX_CLSAB_STATE_HPHR;
 	} else {
 		pr_err("%s: Invalid w->shift %d\n", __func__, w->shift);
 		return -EINVAL;
@@ -3738,30 +3552,20 @@ static int taiko_hph_pa_event(struct snd_soc_dapm_widget *w,
 		usleep_range(pa_settle_time, pa_settle_time + 1000);
 		pr_debug("%s: sleep %d us after %s PA enable\n", __func__,
 				pa_settle_time, w->name);
-		if (taiko->headset_pa_en_gpio > 0)
-			gpio_direction_output(taiko->headset_pa_en_gpio, 1);
-		else {
 #ifdef CONFIG_SND_SOC_TPA6130A2
 		tpa6130a2_stereo_enable(codec, 1);
 #else
-		if (!high_perf_mode) {
-			wcd9xxx_clsh_fsm(codec, &taiko->clsh_d,
+		wcd9xxx_clsh_fsm(codec, &taiko->clsh_d,
 						 req_clsh_state,
 						 WCD9XXX_CLSH_REQ_ENABLE,
 						 WCD9XXX_CLSH_EVENT_POST_PA);
-			}
 #endif
-		}
 		break;
 
 	case SND_SOC_DAPM_POST_PMD:
-		if (taiko->headset_pa_en_gpio > 0)
-			gpio_direction_output(taiko->headset_pa_en_gpio, 0);
-		else {
 #ifdef CONFIG_SND_SOC_TPA6130A2
-			tpa6130a2_stereo_enable(codec, 0);
+		tpa6130a2_stereo_enable(codec, 0);
 #endif
-		}
 		usleep_range(pa_settle_time, pa_settle_time + 1000);
 		pr_debug("%s: sleep %d us after %s PA disable\n", __func__,
 				pa_settle_time, w->name);
@@ -3769,17 +3573,10 @@ static int taiko_hph_pa_event(struct snd_soc_dapm_widget *w,
 		/* Let MBHC module know PA turned off */
 		wcd9xxx_resmgr_notifier_call(&taiko->resmgr, e_post_off);
 #ifndef CONFIG_SND_SOC_TPA6130A2
-		if (!high_perf_mode) {
-			wcd9xxx_clsh_fsm(codec, &taiko->clsh_d,
+		wcd9xxx_clsh_fsm(codec, &taiko->clsh_d,
 						 req_clsh_state,
 						 WCD9XXX_CLSH_REQ_DISABLE,
 						 WCD9XXX_CLSH_EVENT_POST_PA);
-		} else {
-			wcd9xxx_enable_high_perf_mode(codec, &taiko->clsh_d,
-						WCD9XXX_NON_UHQA_MODE,
-						req_clsab_state,
-						WCD9XXX_CLSAB_REQ_DISABLE);
-		}
 #endif
 		break;
 	}
@@ -4051,12 +3848,6 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"ANC2 MUX", "ADC2", "ADC2"},
 	{"ANC2 MUX", "ADC3", "ADC3"},
 	{"ANC2 MUX", "ADC4", "ADC4"},
-	{"ANC2 MUX", "DMIC1", "DMIC1"},
-	{"ANC2 MUX", "DMIC2", "DMIC2"},
-	{"ANC2 MUX", "DMIC3", "DMIC3"},
-	{"ANC2 MUX", "DMIC4", "DMIC4"},
-	{"ANC2 MUX", "DMIC5", "DMIC5"},
-	{"ANC2 MUX", "DMIC6", "DMIC6"},
 
 	{"ANC HPHR", NULL, "CDC_CONN"},
 
@@ -4351,29 +4142,21 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"DEC7 MUX", "DMIC6", "DMIC6"},
 	{"DEC7 MUX", "ADC1", "ADC1"},
 	{"DEC7 MUX", "ADC6", "ADC6"},
-	{"DEC7 MUX", "ANC1_FB", "ANC1 MUX"},
-	{"DEC7 MUX", "ANC2_FB", "ANC2 MUX"},
 	{"DEC7 MUX", NULL, "CDC_CONN"},
 	{"DEC8 MUX", "DMIC2", "DMIC2"},
 	{"DEC8 MUX", "DMIC5", "DMIC5"},
 	{"DEC8 MUX", "ADC2", "ADC2"},
 	{"DEC8 MUX", "ADC5", "ADC5"},
-	{"DEC8 MUX", "ANC1_FB", "ANC1 MUX"},
-	{"DEC8 MUX", "ANC2_FB", "ANC2 MUX"},
 	{"DEC8 MUX", NULL, "CDC_CONN"},
 	{"DEC9 MUX", "DMIC4", "DMIC4"},
 	{"DEC9 MUX", "DMIC5", "DMIC5"},
 	{"DEC9 MUX", "ADC2", "ADC2"},
 	{"DEC9 MUX", "ADC3", "ADC3"},
-	{"DEC9 MUX", "ANC1_FB", "ANC1 MUX"},
-	{"DEC9 MUX", "ANC2_FB", "ANC2 MUX"},
 	{"DEC9 MUX", NULL, "CDC_CONN"},
 	{"DEC10 MUX", "DMIC3", "DMIC3"},
 	{"DEC10 MUX", "DMIC6", "DMIC6"},
 	{"DEC10 MUX", "ADC1", "ADC1"},
 	{"DEC10 MUX", "ADC4", "ADC4"},
-	{"DEC10 MUX", "ANC1_FB", "ANC1 MUX"},
-	{"DEC10 MUX", "ANC2_FB", "ANC2 MUX"},
 	{"DEC10 MUX", NULL, "CDC_CONN"},
 
 	/* ADC Connections */
@@ -4797,9 +4580,8 @@ static int taiko_set_channel_map(struct snd_soc_dai *dai,
 	struct wcd9xxx_codec_dai_data *dai_data = NULL;
 	struct taiko_priv *taiko = snd_soc_codec_get_drvdata(dai->codec);
 	struct wcd9xxx *core = dev_get_drvdata(dai->codec->dev->parent);
-	if (!tx_slot || !rx_slot) {
-		pr_err("%s: Invalid tx_slot=%pK, rx_slot=%pK\n", __func__,
-			tx_slot, rx_slot);
+	if (!tx_slot && !rx_slot) {
+		pr_err("%s: Invalid\n", __func__);
 		return -EINVAL;
 	}
 	pr_debug("%s(): dai_name = %s DAI-ID %x tx_ch %d rx_ch %d\n"
@@ -5280,20 +5062,6 @@ static struct snd_soc_dai_driver taiko_dai[] = {
 		.ops = &taiko_dai_ops,
 	},
 	{
-		.name = "taiko_rx3",
-		.id = AIF3_PB,
-		.playback = {
-			.stream_name = "AIF3 Playback",
-			.rates = WCD9320_RATES,
-			.formats = TAIKO_FORMATS_S16_S24_LE,
-			.rate_min = 8000,
-			.rate_max = 192000,
-			.channels_min = 1,
-			.channels_max = 2,
-		},
-		.ops = &taiko_dai_ops,
-	},
-	{
 		.name = "taiko_tx3",
 		.id = AIF3_CAP,
 		.capture = {
@@ -5302,6 +5070,20 @@ static struct snd_soc_dai_driver taiko_dai[] = {
 			.formats = TAIKO_FORMATS,
 			.rate_max = 48000,
 			.rate_min = 8000,
+			.channels_min = 1,
+			.channels_max = 2,
+		},
+		.ops = &taiko_dai_ops,
+	},
+	{
+		.name = "taiko_rx3",
+		.id = AIF3_PB,
+		.playback = {
+			.stream_name = "AIF3 Playback",
+			.rates = WCD9320_RATES,
+			.formats = TAIKO_FORMATS_S16_S24_LE,
+			.rate_min = 8000,
+			.rate_max = 192000,
 			.channels_min = 1,
 			.channels_max = 2,
 		},
@@ -6174,19 +5956,20 @@ static const struct snd_soc_dapm_widget taiko_dapm_widgets[] = {
 		SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
 	SND_SOC_DAPM_AIF_OUT_E("AIF4 MAD", "AIF4 MAD TX", 0,
 			       SND_SOC_NOPM, 0, 0,
-			       taiko_codec_enable_mad, SND_SOC_DAPM_PRE_PMU),
+			       taiko_codec_enable_mad,
+				SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 	SND_SOC_DAPM_SWITCH("MADONOFF", SND_SOC_NOPM, 0, 0,
 			    &aif4_mad_switch),
 	SND_SOC_DAPM_INPUT("MADINPUT"),
 
 	SND_SOC_DAPM_MIXER("AIF1_CAP Mixer", SND_SOC_NOPM, AIF1_CAP, 0,
-		aif1_cap_mixer, ARRAY_SIZE(aif1_cap_mixer)),
+		aif_cap_mixer, ARRAY_SIZE(aif_cap_mixer)),
 
 	SND_SOC_DAPM_MIXER("AIF2_CAP Mixer", SND_SOC_NOPM, AIF2_CAP, 0,
-		aif2_cap_mixer, ARRAY_SIZE(aif2_cap_mixer)),
+		aif_cap_mixer, ARRAY_SIZE(aif_cap_mixer)),
 
 	SND_SOC_DAPM_MIXER("AIF3_CAP Mixer", SND_SOC_NOPM, AIF3_CAP, 0,
-		aif3_cap_mixer, ARRAY_SIZE(aif3_cap_mixer)),
+		aif_cap_mixer, ARRAY_SIZE(aif_cap_mixer)),
 
 	SND_SOC_DAPM_MUX("SLIM TX1 MUX", SND_SOC_NOPM, TAIKO_TX1, 0,
 		&sb_tx1_mux),
@@ -6331,22 +6114,6 @@ static irqreturn_t taiko_slimbus_irq(int irq, void *data)
 		port_id = (tx ? j - 16 : j);
 		val = wcd9xxx_interface_reg_read(codec->control_data,
 					TAIKO_SLIM_PGD_PORT_INT_RX_SOURCE0 + j);
-		if (val) {
-			if (!tx)
-				reg = TAIKO_SLIM_PGD_PORT_INT_EN0 +
-					(port_id / 8);
-			else
-				reg = TAIKO_SLIM_PGD_PORT_INT_TX_EN0 +
-					(port_id / 8);
-			int_val = wcd9xxx_interface_reg_read(
-				codec->control_data, reg);
-			/*
-			 * Ignore interrupts for ports for which the
-			 * interrupts are not specifically enabled.
-			 */
-			if (!(int_val & (1 << (port_id % 8))))
-				continue;
-		}
 		if (val & TAIKO_SLIM_IRQ_OVERFLOW)
 			pr_err_ratelimited(
 			   "%s: overflow error on %s port %d, value %x\n",
@@ -6440,11 +6207,6 @@ static int taiko_handle_pdata(struct taiko_priv *taiko)
 		rc = -EINVAL;
 		goto done;
 	}
-
-#ifndef CONFIG_MSM_UART_HS_USE_HS
-	pdata->micbias.cfilt2_mv = 1800;
-#endif
-
 	/* figure out k value */
 	k1 = wcd9xxx_resmgr_get_k_val(&taiko->resmgr, pdata->micbias.cfilt1_mv);
 	k2 = wcd9xxx_resmgr_get_k_val(&taiko->resmgr, pdata->micbias.cfilt2_mv);
@@ -6644,8 +6406,7 @@ static int taiko_handle_pdata(struct taiko_priv *taiko)
 		0xE, dmic_b2_ctl_value);
 	snd_soc_update_bits(codec, TAIKO_A_CDC_ANC1_B2_CTL,
 		0x1, anc_ctl_value);
-	snd_soc_update_bits(codec, TAIKO_A_CDC_ANC2_B2_CTL,
-		0x01, anc_ctl_value);
+
 done:
 	return rc;
 }
@@ -6955,13 +6716,13 @@ static void taiko_cleanup_irqs(struct taiko_priv *taiko)
 
 	wcd9xxx_free_irq(core_res, WCD9XXX_IRQ_SLIMBUS, taiko);
 }
-
 static
 struct firmware_cal *taiko_get_hwdep_fw_cal(struct snd_soc_codec *codec,
 			enum wcd_cal_type type)
 {
 	struct taiko_priv *taiko;
 	struct firmware_cal *hwdep_cal;
+
 	if (!codec) {
 		pr_err("%s: NULL codec pointer\n", __func__);
 		return NULL;
@@ -6970,12 +6731,13 @@ struct firmware_cal *taiko_get_hwdep_fw_cal(struct snd_soc_codec *codec,
 	hwdep_cal = wcdcal_get_fw_cal(taiko->fw_data, type);
 	if (!hwdep_cal) {
 		dev_err(codec->dev, "%s: cal not sent by %d\n",
-				__func__, type);
+				 __func__, type);
 		return NULL;
-	} else {
-		return hwdep_cal;
 	}
+
+	return hwdep_cal;
 }
+
 int taiko_hs_detect(struct snd_soc_codec *codec,
 		    struct wcd9xxx_mbhc_config *mbhc_cfg)
 {
@@ -6995,6 +6757,14 @@ void taiko_hs_detect_exit(struct snd_soc_codec *codec)
 	taiko->mbhc_started = false;
 }
 EXPORT_SYMBOL(taiko_hs_detect_exit);
+
+void taiko_hs_enable_vddio(struct snd_soc_codec *codec, bool on)
+{
+	struct taiko_priv *taiko = snd_soc_codec_get_drvdata(codec);
+
+	wcd9xxx_mbhc_enable_vddio(&taiko->mbhc, on);
+}
+EXPORT_SYMBOL(taiko_hs_enable_vddio);
 
 void taiko_event_register(
 	int (*machine_event_cb)(struct snd_soc_codec *codec,
@@ -7114,7 +6884,7 @@ static int taiko_setup_zdet(struct wcd9xxx_mbhc *mbhc,
 
 	switch (stage) {
 
-	case MBHC_ZDET_PRE_MEASURE:
+	case PRE_MEAS:
 		INIT_LIST_HEAD(&taiko->reg_save_restore);
 		wcd9xxx_prepare_static_pa(mbhc, &taiko->reg_save_restore);
 		wcd9xxx_enable_static_pa(mbhc, true);
@@ -7158,7 +6928,7 @@ static int taiko_setup_zdet(struct wcd9xxx_mbhc *mbhc,
 		/* Set HPH_MBHC for zdet */
 		__wr(WCD9XXX_A_MBHC_HPH, 0xB3, 0x80);
 		break;
-	case MBHC_ZDET_POST_MEASURE:
+	case POST_MEAS:
 		/* Phase 2 */
 		/* Start the PA ramp on HPH L and R */
 		snd_soc_write(codec, WCD9XXX_A_CDC_PA_RAMP_B2_CTL, 0x05);
@@ -7172,7 +6942,7 @@ static int taiko_setup_zdet(struct wcd9xxx_mbhc *mbhc,
 		usleep_range(ramp_wait_us,
 				ramp_wait_us + WCD9XXX_USLEEP_RANGE_MARGIN_US);
 		break;
-	case MBHC_ZDET_PA_DISABLE:
+	case PA_DISABLE:
 		/* Ramp HPH L & R back to Zero */
 		snd_soc_write(codec, WCD9XXX_A_CDC_PA_RAMP_B2_CTL, 0x0A);
 		/* Ramp generator takes ~17ms */
@@ -7189,45 +6959,30 @@ static int taiko_setup_zdet(struct wcd9xxx_mbhc *mbhc,
 			wcd9xxx_enable_static_pa(mbhc, false);
 		wcd9xxx_restore_registers(codec, &taiko->reg_save_restore);
 		break;
-	default:
-		dev_dbg(codec->dev, "%s: Case %d not supported\n",
-			__func__, stage);
-		break;
 	}
 #undef __wr
 
 	return ret;
 }
 
-static void taiko_compute_impedance(struct wcd9xxx_mbhc *mbhc, s16 *l, s16 *r,
-					uint32_t *zl, uint32_t *zr)
+static void taiko_compute_impedance(s16 *l, s16 *r, uint32_t *zl, uint32_t *zr)
 {
 
-	int64_t rl = 0, rr = 0; /* milliohm */
-	int zld, zrd;
+	int64_t rl, rr = 0; /* milliohm */
 	const int alphal = 364; /* 0.005555 * 65536 = 364.05 */
 	const int alphar = 364; /* 0.005555 * 65536 = 364.05 */
 	const int beta = 3855; /* 0.011765 * 5 * 65536 = 3855.15 */
 	const int rref = 11333; /* not scaled up */
 	const int shift = 16;
 
-	if (!mbhc) {
-		pr_err("%s: NULL pointer for MBHC", __func__);
-		return;
-	}
-
-	zld = l[0] - l[2];
-	if (zld)
-		rl = (int)(l[0] - l[1]) * 1000 / zld;
+	rl = (int)(l[0] - l[1]) * 1000 / (l[0] - l[2]);
 	rl = rl * rref * alphal;
 	rl = rl >> shift;
 	rl = rl * beta;
 	rl = rl >> shift;
 	*zl = rl;
 
-	zrd = r[0] - r[2];
-	if (zrd)
-		rr = (int)(r[0] - r[1]) * 1000 / zrd;
+	rr = (int)(r[0] - r[1]) * 1000 / (r[0] - r[2]);
 	rr = rr * rref  * alphar;
 	rr = rr >> shift;
 	rr = rr * beta;
@@ -7274,6 +7029,18 @@ static int taiko_post_reset_cb(struct wcd9xxx *wcd9xxx)
 
 	mutex_lock(&codec->mutex);
 
+        if (codec->reg_def_copy) {
+            pr_debug("%s: Update ASOC cache", __func__);
+            kfree(codec->reg_cache);
+            codec->reg_cache = kmemdup(codec->reg_def_copy,
+                                            codec->reg_size, GFP_KERNEL);
+            if (!codec->reg_cache) {
+                pr_err("%s: Cache update failed!\n", __func__);
+                mutex_unlock(&codec->mutex);
+                return -ENOMEM;
+            }
+        }
+
 	taiko_update_reg_defaults(codec);
 	if (wcd9xxx->mclk_rate == TAIKO_MCLK_CLK_12P288MHZ)
 		snd_soc_update_bits(codec, TAIKO_A_CHIP_CTL, 0x06, 0x0);
@@ -7315,10 +7082,7 @@ static int taiko_post_reset_cb(struct wcd9xxx *wcd9xxx)
 		else
 			taiko_hs_detect(codec, taiko->mbhc.mbhc_cfg);
 	}
-
-	if (taiko->machine_codec_event_cb)
-		taiko->machine_codec_event_cb(codec,
-				      WCD9XXX_CODEC_EVENT_CODEC_UP);
+	taiko->machine_codec_event_cb(codec, WCD9XXX_CODEC_EVENT_CODEC_UP);
 
 	taiko_cleanup_irqs(taiko);
 	ret = taiko_setup_irqs(taiko);
@@ -7474,7 +7238,6 @@ static int taiko_codec_probe(struct snd_soc_codec *codec)
 	for (i = 0 ; i < NUM_DECIMATORS; i++) {
 		tx_hpf_work[i].taiko = taiko;
 		tx_hpf_work[i].decimator = i + 1;
-		tx_hpf_work[i].tx_hpf_bypass = false;
 		INIT_DELAYED_WORK(&tx_hpf_work[i].dwork,
 			tx_hpf_corner_freq_callback);
 	}
@@ -7487,10 +7250,10 @@ static int taiko_codec_probe(struct snd_soc_codec *codec)
 	pdata = dev_get_platdata(codec->dev->parent);
 	ret = wcd9xxx_resmgr_init(&taiko->resmgr, codec, core_res, pdata,
 				  &pdata->micbias, &taiko_reg_address,
-				  NULL, WCD9XXX_CDC_TYPE_TAIKO);
+				  WCD9XXX_CDC_TYPE_TAIKO);
 	if (ret) {
 		pr_err("%s: wcd9xxx init failed %d\n", __func__, ret);
-		goto err_init;
+		goto err_nomem_slimch;
 	}
 
 	taiko->clsh_d.buck_mv = taiko_codec_get_buck_mv(codec);
@@ -7505,18 +7268,17 @@ static int taiko_codec_probe(struct snd_soc_codec *codec)
 	taiko->fw_data = kzalloc(sizeof(*(taiko->fw_data)), GFP_KERNEL);
 	if (!taiko->fw_data) {
 		dev_err(codec->dev, "Failed to allocate fw_data\n");
-		goto err_init;
+		goto err_nomem_slimch;
 	}
-	set_bit(WCD9XXX_MAD_CAL, taiko->fw_data->cal_bit);
 	set_bit(WCD9XXX_ANC_CAL, taiko->fw_data->cal_bit);
+	set_bit(WCD9XXX_MAD_CAL, taiko->fw_data->cal_bit);
 	set_bit(WCD9XXX_MBHC_CAL, taiko->fw_data->cal_bit);
 	ret = wcd_cal_create_hwdep(taiko->fw_data,
-				WCD9XXX_CODEC_HWDEP_NODE, codec);
+					WCD9XXX_CODEC_HWDEP_NODE, codec);
 	if (ret < 0) {
 		dev_err(codec->dev, "%s hwdep failed %d\n", __func__, ret);
 		goto err_hwdep;
 	}
-
 	/* init and start mbhc */
 	ret = wcd9xxx_mbhc_init(&taiko->mbhc, &taiko->resmgr, codec,
 				taiko_enable_mbhc_micbias,
@@ -7613,29 +7375,9 @@ static int taiko_codec_probe(struct snd_soc_codec *codec)
 
 	snd_soc_add_codec_controls(codec, impedance_detect_controls,
 				   ARRAY_SIZE(impedance_detect_controls));
-
-
 #ifdef CONFIG_SND_SOC_TPA6130A2
 	tpa6130a2_add_controls(codec);
 #endif
-
-	if (get_hw_version_major() == 4 && get_hw_version_minor() <= 2) {
-		taiko->headset_pa_en_gpio = of_get_named_gpio(core->dev->of_node,
-				"qcom,max97220a-en-gpio", 0);
-		if (taiko->headset_pa_en_gpio < 0) {
-			pr_err("%s: Looking up %s property in node %s failed %d\n", __func__,
-				"qcom,max97220a-en-gpio", core->dev->of_node->full_name,
-				taiko->headset_pa_en_gpio);
-		} else {
-			ret = gpio_request(taiko->headset_pa_en_gpio, "max97220a_enable");
-			if (ret) {
-				pr_err("%s: Failed to request gpio %d\n", __func__,
-						taiko->headset_pa_en_gpio);
-				taiko->headset_pa_en_gpio = -1;
-			}
-		}
-	} else
-		taiko->headset_pa_en_gpio = -1;
 
 	control->num_rx_port = TAIKO_RX_MAX;
 	control->rx_chs = ptr;
@@ -7659,18 +7401,18 @@ static int taiko_codec_probe(struct snd_soc_codec *codec)
 	snd_soc_dapm_disable_pin(dapm, "ANC HEADPHONE");
 	snd_soc_dapm_disable_pin(dapm, "ANC EAR PA");
 	snd_soc_dapm_disable_pin(dapm, "ANC EAR");
-	mutex_unlock(&dapm->codec->mutex);
 	snd_soc_dapm_sync(dapm);
+	mutex_unlock(&dapm->codec->mutex);
 
 	codec->ignore_pmdown_time = 1;
 	return ret;
 
 err_irq:
 	taiko_cleanup_irqs(taiko);
-	kfree(ptr);
+        kfree(ptr);
 err_hwdep:
 	kfree(taiko->fw_data);
-err_init:
+err_nomem_slimch:
 	kfree(taiko);
 	return ret;
 }
@@ -7695,6 +7437,7 @@ static int taiko_codec_remove(struct snd_soc_codec *codec)
 
 	taiko->spkdrv_reg = NULL;
 
+	kfree(taiko->fw_data);
 	kfree(taiko);
 	return 0;
 }
@@ -7748,7 +7491,7 @@ static const struct dev_pm_ops taiko_pm_ops = {
 };
 #endif
 
-static int taiko_probe(struct platform_device *pdev)
+static int __devinit taiko_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	if (wcd9xxx_get_intf_type() == WCD9XXX_INTERFACE_TYPE_SLIMBUS)
@@ -7759,7 +7502,7 @@ static int taiko_probe(struct platform_device *pdev)
 			taiko_i2s_dai, ARRAY_SIZE(taiko_i2s_dai));
 	return ret;
 }
-static int taiko_remove(struct platform_device *pdev)
+static int __devexit taiko_remove(struct platform_device *pdev)
 {
 	snd_soc_unregister_codec(&pdev->dev);
 	return 0;
