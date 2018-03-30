@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2010 Samsung Electronics Co.Ltd
  * Author: Joonyoung Shim <jy0922.shim@samsung.com>
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute  it and/or modify it
  * under  the terms of  the GNU General  Public License as published by the
@@ -15,6 +15,7 @@
 #define __LINUX_ATMEL_MXT_TS_640T_H
 
 #include <linux/types.h>
+#include <linux/notifier.h>
 
 #define MXT224_I2C_ADDR1        0x4A
 #define MXT224_I2C_ADDR2        0x4B
@@ -47,7 +48,7 @@ struct mxt_config_info {
 	u8 vendor_id;
 	u8 rev_id;
 	/* Points to the firmware name to be upgraded to */
-	const char* mxt_cfg_name;
+	const char *mxt_cfg_name;
 	int *key_codes;
 	int key_num;
 	u8 selfintthr_stylus;
@@ -65,7 +66,7 @@ struct mxt_config_info {
 /* The platform data for the Atmel maXTouch touchscreen driver */
 struct mxt_platform_data {
 	struct mxt_config_info *config_array;
-	const char* mxt_fw_name;
+	const char *mxt_fw_name;
 	size_t config_array_size;
 	unsigned long irqflags;
 	int power_gpio;
@@ -80,6 +81,9 @@ struct mxt_platform_data {
 	int default_config;
 	bool cut_off_power;
 };
+
+int mxt_register_glove_mode_notifier(struct notifier_block *nb);
+int mxt_unregister_glove_mode_notifier(struct notifier_block *nb);
 
 #endif /* __LINUX_ATMEL_MXT_TS_640T_H */
 
