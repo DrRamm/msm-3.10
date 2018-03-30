@@ -1,5 +1,5 @@
 /* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -29,6 +29,12 @@ static struct msm_sensor_power_setting s5k3m2_power_setting[] = {
 	{
 		.seq_type = SENSOR_GPIO,
 		.seq_val = SENSOR_GPIO_RESET,
+		.config_val = GPIO_OUT_LOW,
+		.delay = 1,
+	},
+	{
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_IMG_EN,
 		.config_val = GPIO_OUT_HIGH,
 		.delay = 1,
 	},
@@ -38,7 +44,6 @@ static struct msm_sensor_power_setting s5k3m2_power_setting[] = {
 		.config_val = GPIO_OUT_HIGH,
 		.delay = 1,
 	},
-
 	{
 		.seq_type = SENSOR_VREG,
 		.seq_val = CAM_VDIG,
@@ -63,23 +68,18 @@ static struct msm_sensor_power_setting s5k3m2_power_setting[] = {
 		.config_val = 0,
 		.delay = 0,
 	},
-	{
-		.seq_type = SENSOR_GPIO,
-		.seq_val = SENSOR_GPIO_RESET,
-		.config_val = GPIO_OUT_LOW,
-		.delay = 1,
-	},
+
 	{
 		.seq_type = SENSOR_GPIO,
 		.seq_val = SENSOR_GPIO_RESET,
 		.config_val = GPIO_OUT_HIGH,
-		.delay = 30,
+		.delay = 1,
 	},
 	{
 		.seq_type = SENSOR_CLK,
 		.seq_val = SENSOR_CAM_MCLK,
 		.config_val = 24000000,
-		.delay = 1,
+		.delay = 10,
 	},
 	{
 		.seq_type = SENSOR_I2C_MUX,
@@ -145,8 +145,8 @@ static int32_t s5k3m2_platform_probe(struct platform_device *pdev)
 	return rc;
 }
 
-#define S5K3M2_WW(a,b) s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write(s_ctrl->sensor_i2c_client, a, b, MSM_CAMERA_I2C_WORD_DATA);
-#define S5K3M2_RW(a,b) s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(s_ctrl->sensor_i2c_client, 0x0A04+a, b, MSM_CAMERA_I2C_WORD_DATA);
+#define S5K3M2_WW(a, b) s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write(s_ctrl->sensor_i2c_client, a, b, MSM_CAMERA_I2C_WORD_DATA);
+#define S5K3M2_RW(a, b) s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(s_ctrl->sensor_i2c_client, 0x0A04+a, b, MSM_CAMERA_I2C_WORD_DATA);
 static int s5k3m2_wait_otp_page(struct msm_sensor_ctrl_t *s_ctrl, u16 page)
 {
 	S5K3M2_WW(0x0136, 0x1800);
@@ -159,13 +159,13 @@ static int s5k3m2_wait_otp_page(struct msm_sensor_ctrl_t *s_ctrl, u16 page)
 	S5K3M2_WW(0x030A, 0x0001);
 	S5K3M2_WW(0x0308, 0x0008);
 	S5K3M2_WW(0x0100, 0x0100);
-	msleep(10);
+	usleep_range(10000, 11000);
 	S5K3M2_WW(0x0A02, page);
 	S5K3M2_WW(0x0A00, 0x0100);
-
 	return 0;
 }
 
+#define SYSMAT_DBG 0
 extern uint16_t imx214_af_inf;
 extern uint16_t imx214_af_mac;
 static int32_t s5k3m2_match_id(struct msm_sensor_ctrl_t *s_ctrl)
@@ -173,6 +173,12 @@ static int32_t s5k3m2_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 	int32_t i;
 	int32_t rc = 0;
 	uint16_t chipid = 0;
+#if SYSMAT_DBG
+	uint8_t dt[90] = {0};
+	uint8_t s1[180] = {0};
+	uint8_t s2[90] = {0};
+	uint8_t matcmd[512] = {0};
+#endif
 
 	rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_read(
 			s_ctrl->sensor_i2c_client,
@@ -190,35 +196,36 @@ static int32_t s5k3m2_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		pr_err("msm_sensor_match_id chip id doesnot match");
 		return -ENODEV;
 	}
-        s_ctrl->sensordata->sensor_name = "s5k3m2";
+	s_ctrl->sensordata->sensor_name = "s5k3m2";
 
-	if(imx214_af_inf > 0) return 0;
+	if (imx214_af_inf > 0)
+	return 0;
 
 	s5k3m2_wait_otp_page(s_ctrl, 0x1F00);
 	S5K3M2_RW(0, &chipid);
 	pr_info("%s OTP0:0x%04x", __func__, chipid);
 
-	for(i = 62; i >= 30; i -= 16) {
+	for (i = 62; i >= 30; i -= 16) {
 		S5K3M2_RW(i, &chipid);
 		pr_info("%s OTP0:0x%04x", __func__, chipid);
-		if((chipid & 0xFF) == 0x11) {
+		if ((chipid & 0xFF) == 0x11) {
 			S5K3M2_RW(i - 14, &imx214_af_inf);
 			S5K3M2_RW(i - 12, &imx214_af_mac);
 			break;
 		}
 	}
 /* infinite tolerance 15% */
-        if ((imx214_af_mac - imx214_af_inf) / 16 > imx214_af_inf)
-                imx214_af_inf = 0;
-        else
-                imx214_af_inf -= (imx214_af_mac - imx214_af_inf) / 16;
+	if ((imx214_af_mac - imx214_af_inf) / 16 > imx214_af_inf)
+		imx214_af_inf = 0;
+	else
+		imx214_af_inf -= (imx214_af_mac - imx214_af_inf) / 16;
 
-        imx214_af_mac += (imx214_af_mac - imx214_af_inf) / 5; /* add more dac for marco focusing */
-        if(imx214_af_mac > 510)
-                imx214_af_mac = 510;
+	imx214_af_mac += (imx214_af_mac - imx214_af_inf) / 5; /* add more dac for marco focusing */
+	if (imx214_af_mac > 510)
+		imx214_af_mac = 510;
 
 	pr_info("%s inf:%d marco:%d ", __func__, imx214_af_inf, imx214_af_mac);
-        return 0;
+	return 0;
 }
 
 static int __init s5k3m2_init_module(void)
@@ -251,7 +258,7 @@ static struct msm_sensor_ctrl_t s5k3m2_s_ctrl = {
 	.msm_sensor_mutex = &s5k3m2_mut,
 	.sensor_v4l2_subdev_info = s5k3m2_subdev_info,
 	.sensor_v4l2_subdev_info_size = ARRAY_SIZE(s5k3m2_subdev_info),
-	//.sensor_match_id = s5k3m2_match_id,
+	.sensor_match_id = s5k3m2_match_id,
 };
 
 module_init(s5k3m2_init_module);

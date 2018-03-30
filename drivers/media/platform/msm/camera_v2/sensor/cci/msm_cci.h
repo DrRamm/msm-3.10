@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -17,9 +17,8 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <media/v4l2-subdev.h>
-#include <linux/workqueue.h>
 #include <media/msm_cam_sensor.h>
-#include <soc/qcom/camera2.h>
+#include <mach/camera2.h>
 #include "msm_sd.h"
 
 #define NUM_MASTERS 2
@@ -28,32 +27,16 @@
 #define TRUE  1
 #define FALSE 0
 
-#define CCI_PINCTRL_STATE_DEFAULT "cci_default"
-#define CCI_PINCTRL_STATE_SLEEP "cci_suspend"
-
 #define CCI_NUM_CLK_MAX	16
-#define CCI_NUM_CLK_CASES 5
-#define CCI_CLK_SRC_NAME "cci_src_clk"
-#define MSM_CCI_WRITE_DATA_PAYLOAD_SIZE_10 10
-#define MSM_CCI_WRITE_DATA_PAYLOAD_SIZE_11 11
-#define BURST_MIN_FREE_SIZE 8
-
-enum cci_i2c_sync {
-	MSM_SYNC_DISABLE,
-	MSM_SYNC_ENABLE,
-};
-
 
 enum cci_i2c_queue_t {
 	QUEUE_0,
 	QUEUE_1,
-	QUEUE_INVALID,
 };
 
 struct msm_camera_cci_client {
 	struct v4l2_subdev *cci_subdev;
 	uint32_t freq;
-	enum i2c_freq_mode_t i2c_freq_mode;
 	enum cci_i2c_master_t cci_i2c_master;
 	uint16_t sid;
 	uint16_t cid;
@@ -71,15 +54,10 @@ enum msm_cci_cmd_type {
 	MSM_CCI_I2C_READ,
 	MSM_CCI_I2C_WRITE,
 	MSM_CCI_I2C_WRITE_SEQ,
-	MSM_CCI_I2C_WRITE_ASYNC,
 	MSM_CCI_GPIO_WRITE,
-	MSM_CCI_I2C_WRITE_SYNC,
-	MSM_CCI_I2C_WRITE_SYNC_BLOCK,
 };
 
 struct msm_camera_cci_wait_sync_cfg {
-	uint16_t cid;
-	int16_t csid;
 	uint16_t line;
 	uint16_t delay;
 };
@@ -117,14 +95,9 @@ struct msm_camera_cci_ctrl {
 
 struct msm_camera_cci_master_info {
 	uint32_t status;
-	atomic_t q_free[NUM_QUEUES];
-	uint8_t q_lock[NUM_QUEUES];
 	uint8_t reset_pending;
 	struct mutex mutex;
 	struct completion reset_complete;
-	struct mutex mutex_q[NUM_QUEUES];
-	struct completion report_q[NUM_QUEUES];
-	atomic_t done_pending[NUM_QUEUES];
 };
 
 struct msm_cci_clk_params_t {
@@ -138,7 +111,6 @@ struct msm_cci_clk_params_t {
 	uint8_t hw_scl_stretch_en;
 	uint8_t hw_trdhld;
 	uint8_t hw_tsp;
-	uint32_t cci_clk_src;
 };
 
 enum msm_cci_state_t {
@@ -158,28 +130,14 @@ struct cci_device {
 	uint32_t hw_version;
 	uint8_t ref_count;
 	enum msm_cci_state_t cci_state;
-	uint32_t num_clk;
-	struct mutex mutex;
-	uint32_t num_clk_cases;
 
 	struct clk *cci_clk[CCI_NUM_CLK_MAX];
 	struct msm_camera_cci_i2c_queue_info
 		cci_i2c_queue_info[NUM_MASTERS][NUM_QUEUES];
 	struct msm_camera_cci_master_info cci_master_info[NUM_MASTERS];
-	enum i2c_freq_mode_t i2c_freq_mode[NUM_MASTERS];
-	struct msm_cci_clk_params_t cci_clk_params[I2C_MAX_MODES];
+	struct msm_cci_clk_params_t cci_clk_params[MASTER_MAX];
 	struct gpio *cci_gpio_tbl;
 	uint8_t cci_gpio_tbl_size;
-	struct msm_pinctrl_info cci_pinctrl;
-	uint8_t cci_pinctrl_status;
-	struct regulator *reg_ptr;
-	uint32_t cycles_per_us;
-	uint32_t cci_clk_src;
-	uint8_t payload_size;
-	uint8_t support_seq_write;
-	struct workqueue_struct *write_wq[MASTER_MAX];
-	struct msm_camera_cci_wait_sync_cfg cci_wait_sync_cfg;
-	uint8_t valid_sync;
 };
 
 enum msm_cci_i2c_cmd_type {
@@ -215,22 +173,7 @@ enum msm_cci_gpio_cmd_type {
 	CCI_GPIO_INVALID_CMD,
 };
 
-struct cci_write_async {
-	struct cci_device *cci_dev;
-	struct msm_camera_cci_ctrl c_ctrl;
-	enum cci_i2c_queue_t queue;
-	struct work_struct work;
-	enum cci_i2c_sync sync_en;
-};
-
-#ifdef CONFIG_MSM_CCI
 struct v4l2_subdev *msm_cci_get_subdev(void);
-#else
-static inline struct v4l2_subdev *msm_cci_get_subdev(void)
-{
-	return NULL;
-}
-#endif
 
 #define VIDIOC_MSM_CCI_CFG \
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 23, struct msm_camera_cci_ctrl *)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2014, The Linux Foundataion. All rights reserved.
+/* Copyright (c) 2011-2013, The Linux Foundataion. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -16,24 +16,29 @@
 #include <linux/regulator/consumer.h>
 #include <linux/io.h>
 #include <linux/err.h>
-#include <soc/qcom/camera2.h>
-#include <linux/msm-bus.h>
+#include <mach/camera2.h>
+#include <mach/gpiomux.h>
+#include <mach/msm_bus.h>
 #include "msm_camera_io_util.h"
 
 #define BUFF_SIZE_128 128
 
 #undef CDBG
+#ifdef CONFIG_MSMB_CAMERA_DEBUG
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
+#else
+#define CDBG(fmt, args...) do { } while (0)
+#endif
 
 void msm_camera_io_w(u32 data, void __iomem *addr)
 {
-	CDBG("%s: 0x%pK %08x\n", __func__,  (addr), (data));
+	CDBG("%s: %08x %08x\n", __func__, (int) (addr), (data));
 	writel_relaxed((data), (addr));
 }
 
 void msm_camera_io_w_mb(u32 data, void __iomem *addr)
 {
-	CDBG("%s: 0x%pK %08x\n", __func__,  (addr), (data));
+	CDBG("%s: %08x %08x\n", __func__, (int) (addr), (data));
 	wmb();
 	writel_relaxed((data), (addr));
 	wmb();
@@ -42,19 +47,17 @@ void msm_camera_io_w_mb(u32 data, void __iomem *addr)
 u32 msm_camera_io_r(void __iomem *addr)
 {
 	uint32_t data = readl_relaxed(addr);
-
-	CDBG("%s: 0x%pK %08x\n", __func__,  (addr), (data));
+	CDBG("%s: %08x %08x\n", __func__, (int) (addr), (data));
 	return data;
 }
 
 u32 msm_camera_io_r_mb(void __iomem *addr)
 {
 	uint32_t data;
-
 	rmb();
 	data = readl_relaxed(addr);
 	rmb();
-	CDBG("%s: 0x%pK %08x\n", __func__,  (addr), (data));
+	CDBG("%s: %08x %08x\n", __func__, (int) (addr), (data));
 	return data;
 }
 
@@ -75,17 +78,16 @@ void msm_camera_io_dump(void __iomem *addr, int size)
 	int i;
 	u32 *p = (u32 *) addr;
 	u32 data;
-
-	CDBG("%s: %pK %d\n", __func__, addr, size);
+	CDBG("%s: %p %d\n", __func__, addr, size);
 	line_str[0] = '\0';
 	p_str = line_str;
 	for (i = 0; i < size/4; i++) {
 		if (i % 4 == 0) {
-			snprintf(p_str, 12, "0x%pK: ",  p);
+			snprintf(p_str, 12, "%08x: ", (u32) p);
 			p_str += 10;
 		}
 		data = readl_relaxed(p++);
-		snprintf(p_str, 12, "%d ", data);
+		snprintf(p_str, 12, "%08x ", data);
 		p_str += 9;
 		if ((i + 1) % 4 == 0) {
 			CDBG("%s\n", line_str);
@@ -100,7 +102,7 @@ void msm_camera_io_dump(void __iomem *addr, int size)
 void msm_camera_io_memcpy(void __iomem *dest_addr,
 	void __iomem *src_addr, u32 len)
 {
-	CDBG("%s: %pK %pK %d\n", __func__, dest_addr, src_addr, len);
+	CDBG("%s: %p %p %d\n", __func__, dest_addr, src_addr, len);
 	msm_camera_io_memcpy_toio(dest_addr, src_addr, len / 4);
 	msm_camera_io_dump(dest_addr, len);
 }
@@ -111,14 +113,9 @@ void msm_camera_io_memcpy_mb(void __iomem *dest_addr,
 	int i;
 	u32 *d = (u32 *) dest_addr;
 	u32 *s = (u32 *) src_addr;
-	/* This is generic function called who needs to register
-	writes with memory barrier */
-	wmb();
-	for (i = 0; i < (len / 4); i++) {
-		msm_camera_io_w(*s++, d++);
-		/* ensure write is done after every iteration */
-		wmb();
-	}
+
+	for (i = 0; i < (len / 4); i++)
+		msm_camera_io_w_mb(*s++, d++);
 }
 
 int msm_cam_clk_sel_src(struct device *dev, struct msm_cam_clk_info *clk_info,
@@ -155,10 +152,10 @@ int msm_cam_clk_enable(struct device *dev, struct msm_cam_clk_info *clk_info,
 	int i;
 	int rc = 0;
 	long clk_rate;
-
 	if (enable) {
 		for (i = 0; i < num_clk; i++) {
-			CDBG("%s enable %s\n", __func__, clk_info[i].clk_name);
+			CDBG("%s enable %s\n", __func__,
+				clk_info[i].clk_name);
 			clk_ptr[i] = clk_get(dev, clk_info[i].clk_name);
 			if (IS_ERR(clk_ptr[i])) {
 				pr_err("%s get failed\n", clk_info[i].clk_name);
@@ -166,21 +163,13 @@ int msm_cam_clk_enable(struct device *dev, struct msm_cam_clk_info *clk_info,
 				goto cam_clk_get_err;
 			}
 			if (clk_info[i].clk_rate > 0) {
-				clk_rate = clk_round_rate(clk_ptr[i],
-					clk_info[i].clk_rate);
-				if (clk_rate < 0) {
-					pr_err("%s round failed\n",
+				rc = clk_set_rate(clk_ptr[i],
+							clk_info[i].clk_rate);
+				if (rc < 0) {
+					pr_err("%s set failed\n",
 						   clk_info[i].clk_name);
 					goto cam_clk_set_err;
 				}
-				rc = clk_set_rate(clk_ptr[i],
-					clk_rate);
-				if (rc < 0) {
-					pr_err("%s set failed\n",
-						clk_info[i].clk_name);
-					goto cam_clk_set_err;
-				}
-
 			} else if (clk_info[i].clk_rate == INIT_RATE) {
 				clk_rate = clk_get_rate(clk_ptr[i]);
 				if (clk_rate == 0) {
@@ -262,12 +251,6 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 		pr_err("%s:%d vreg sequence invalid\n", __func__, __LINE__);
 		return -EINVAL;
 	}
-
-	if (cam_vreg == NULL) {
-		pr_err("%s:%d cam_vreg sequence invalid\n", __func__, __LINE__);
-		return -EINVAL;
-	}
-
 	if (!num_vreg_seq)
 		num_vreg_seq = num_vreg;
 
@@ -289,7 +272,7 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 				reg_ptr[j] = NULL;
 				goto vreg_get_fail;
 			}
-			if (regulator_count_voltages(reg_ptr[j]) > 0) {
+			if (curr_vreg->type == REG_LDO) {
 				rc = regulator_set_voltage(
 					reg_ptr[j],
 					curr_vreg->min_voltage,
@@ -324,7 +307,7 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 				j = i;
 			curr_vreg = &cam_vreg[j];
 			if (reg_ptr[j]) {
-				if (regulator_count_voltages(reg_ptr[j]) > 0) {
+				if (curr_vreg->type == REG_LDO) {
 					if (curr_vreg->op_mode >= 0) {
 						regulator_set_optimum_mode(
 							reg_ptr[j], 0);
@@ -341,11 +324,11 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 	return 0;
 
 vreg_unconfig:
-if (regulator_count_voltages(reg_ptr[j]) > 0)
+if (curr_vreg->type == REG_LDO)
 	regulator_set_optimum_mode(reg_ptr[j], 0);
 
 vreg_set_opt_mode_fail:
-if (regulator_count_voltages(reg_ptr[j]) > 0)
+if (curr_vreg->type == REG_LDO)
 	regulator_set_voltage(reg_ptr[j], 0,
 		curr_vreg->max_voltage);
 
@@ -444,7 +427,6 @@ void msm_camera_bus_scale_cfg(uint32_t bus_perf_client,
 		enum msm_bus_perf_setting perf_setting)
 {
 	int rc = 0;
-
 	if (!bus_perf_client) {
 		pr_err("%s: Bus Client NOT Registered!!!\n", __func__);
 		return;
@@ -473,7 +455,7 @@ void msm_camera_bus_scale_cfg(uint32_t bus_perf_client,
 	case S_DEFAULT:
 		break;
 	default:
-		pr_err("%s: INVALID CASE\n", __func__);
+		pr_warning("%s: INVALID CASE\n", __func__);
 	}
 }
 
@@ -503,45 +485,22 @@ int msm_camera_config_single_vreg(struct device *dev,
 	struct camera_vreg_t *cam_vreg, struct regulator **reg_ptr, int config)
 {
 	int rc = 0;
-	const char *vreg_name = NULL;
-
-	if (!dev || !cam_vreg || !reg_ptr) {
-		pr_err("%s: get failed NULL parameter\n", __func__);
-		goto vreg_get_fail;
-	}
-	if (cam_vreg->type == VREG_TYPE_CUSTOM) {
-		if (cam_vreg->custom_vreg_name == NULL) {
-			pr_err("%s : can't find sub reg name",
-				__func__);
-			goto vreg_get_fail;
-		}
-		vreg_name = cam_vreg->custom_vreg_name;
-	} else {
-		if (cam_vreg->reg_name == NULL) {
-			pr_err("%s : can't find reg name", __func__);
-			goto vreg_get_fail;
-		}
-		vreg_name = cam_vreg->reg_name;
-	}
-
 	if (config) {
-		CDBG("%s enable %s\n", __func__, vreg_name);
-		*reg_ptr = regulator_get(dev, vreg_name);
+		CDBG("%s enable %s\n", __func__, cam_vreg->reg_name);
+		*reg_ptr = regulator_get(dev, cam_vreg->reg_name);
 		if (IS_ERR(*reg_ptr)) {
-			pr_err("%s: %s get failed\n", __func__, vreg_name);
+			pr_err("%s: %s get failed\n", __func__,
+				cam_vreg->reg_name);
 			*reg_ptr = NULL;
 			goto vreg_get_fail;
 		}
-		if (regulator_count_voltages(*reg_ptr) > 0) {
-			CDBG("%s: voltage min=%d, max=%d\n",
-				__func__, cam_vreg->min_voltage,
-				cam_vreg->max_voltage);
+		if (cam_vreg->type == REG_LDO) {
 			rc = regulator_set_voltage(
 				*reg_ptr, cam_vreg->min_voltage,
 				cam_vreg->max_voltage);
 			if (rc < 0) {
 				pr_err("%s: %s set voltage failed\n",
-					__func__, vreg_name);
+					__func__, cam_vreg->reg_name);
 				goto vreg_set_voltage_fail;
 			}
 			if (cam_vreg->op_mode >= 0) {
@@ -550,23 +509,22 @@ int msm_camera_config_single_vreg(struct device *dev,
 				if (rc < 0) {
 					pr_err(
 					"%s: %s set optimum mode failed\n",
-					__func__, vreg_name);
+					__func__, cam_vreg->reg_name);
 					goto vreg_set_opt_mode_fail;
 				}
 			}
 		}
 		rc = regulator_enable(*reg_ptr);
 		if (rc < 0) {
-			pr_err("%s: %s regulator_enable failed\n", __func__,
-				vreg_name);
+			pr_err("%s: %s enable failed\n",
+				__func__, cam_vreg->reg_name);
 			goto vreg_unconfig;
 		}
 	} else {
-		CDBG("%s disable %s\n", __func__, vreg_name);
 		if (*reg_ptr) {
-			CDBG("%s disable %s\n", __func__, vreg_name);
+			CDBG("%s disable %s\n", __func__, cam_vreg->reg_name);
 			regulator_disable(*reg_ptr);
-			if (regulator_count_voltages(*reg_ptr) > 0) {
+			if (cam_vreg->type == REG_LDO) {
 				if (cam_vreg->op_mode >= 0)
 					regulator_set_optimum_mode(*reg_ptr, 0);
 				regulator_set_voltage(
@@ -574,18 +532,16 @@ int msm_camera_config_single_vreg(struct device *dev,
 			}
 			regulator_put(*reg_ptr);
 			*reg_ptr = NULL;
-		} else {
-			pr_err("%s can't disable %s\n", __func__, vreg_name);
 		}
 	}
 	return 0;
 
 vreg_unconfig:
-if (regulator_count_voltages(*reg_ptr) > 0)
+if (cam_vreg->type == REG_LDO)
 	regulator_set_optimum_mode(*reg_ptr, 0);
 
 vreg_set_opt_mode_fail:
-if (regulator_count_voltages(*reg_ptr) > 0)
+if (cam_vreg->type == REG_LDO)
 	regulator_set_voltage(*reg_ptr, 0, cam_vreg->max_voltage);
 
 vreg_set_voltage_fail:
@@ -602,7 +558,7 @@ int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 	int rc = 0, i = 0, err = 0;
 
 	if (!gpio_tbl || !size) {
-		pr_err("%s:%d invalid gpio_tbl %pK / size %d\n", __func__,
+		pr_err("%s:%d invalid gpio_tbl %p / size %d\n", __func__,
 			__LINE__, gpio_tbl, size);
 		return -EINVAL;
 	}
