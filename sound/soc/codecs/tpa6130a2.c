@@ -2,7 +2,9 @@
  * ALSA SoC Texas Instruments TPA6130A2 headset stereo amplifier driver
  *
  * Copyright (C) Nokia Corporation
- * Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
+ *
+ * Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -222,7 +224,7 @@ static int tpa6130a2_put_volsw(struct snd_kcontrol *kcontrol,
 		val = max - val;
 
 	pr_info ("tpa6130a2_put_volsw: invert:%d, max:0x%x, mask:0x%x, value:%ld, val:0x%x ",
-                    invert, max, mask, ucontrol->value.integer.value[0], val);
+			invert, max, mask, ucontrol->value.integer.value[0], val);
 
 	mutex_lock(&data->mutex);
 
@@ -269,7 +271,7 @@ static const struct snd_kcontrol_new tpa6130a2_controls[] = {
 		       tpa6130_tlv),
 
 	SOC_SINGLE_EXT("TI PA Gain", TPA6130A2_REG_VOL_MUTE, 0, 0x3f, 0,
-		tpa6130a2_get_volsw, tpa6130a2_put_volsw),
+			tpa6130a2_get_volsw, tpa6130a2_put_volsw),
 };
 
 static const unsigned int tpa6140_tlv[] = {
@@ -334,7 +336,7 @@ int tpa6130a2_stereo_enable(struct snd_soc_codec *codec, int enable)
 	int ret = 0;
 
 	if (tpa6130a2_client == NULL)
-		return -1;
+		return -EPERM;
 
 	pr_info ("tpa6130a2_stereo_enable: %s, enable:%d", codec->name, enable);
 	if (enable) {
@@ -371,7 +373,7 @@ int tpa6130a2_add_controls(struct snd_soc_codec *codec)
 }
 EXPORT_SYMBOL_GPL(tpa6130a2_add_controls);
 
-static int tpa6130a2_probe(struct i2c_client *client,
+static int __devinit tpa6130a2_probe(struct i2c_client *client,
 				     const struct i2c_device_id *id)
 {
 	struct device *dev;
@@ -391,12 +393,12 @@ static int tpa6130a2_probe(struct i2c_client *client,
 				return -ENODEV;
 		if (get_hw_version_major() == 3 && get_hw_version_minor() == 1)
 			en_gpio = of_get_named_gpio_flags(client->dev.of_node,
-						"ti,enable-gpio-3_1", 0, NULL);
+					"ti,enable-gpio-3_1", 0, NULL);
 		else
 			en_gpio = of_get_named_gpio_flags(client->dev.of_node,
-						"ti,enable-gpio", 0, NULL);
+					"ti,enable-gpio", 0, NULL);
 		dev_info(dev, "probe from device tree mode: en-gpio=%d\n", en_gpio);
-	} else if(client->dev.platform_data != NULL) {
+	} else if (client->dev.platform_data != NULL) {
 		pdata = client->dev.platform_data;
 		en_gpio = pdata->power_gpio;
 		dev_info(dev, "probe from board file mode: en-gpio=%d\n", en_gpio);
@@ -459,7 +461,7 @@ err_gpio:
 	return ret;
 }
 
-static int tpa6130a2_remove(struct i2c_client *client)
+static int __devexit tpa6130a2_remove(struct i2c_client *client)
 {
 	struct tpa6130a2_data *data = i2c_get_clientdata(client);
 
@@ -492,7 +494,7 @@ static struct i2c_driver tpa6130a2_i2c_driver = {
 		.of_match_table = tpa6130a2_match_table,
 	},
 	.probe = tpa6130a2_probe,
-	.remove = tpa6130a2_remove,
+	.remove = __devexit_p(tpa6130a2_remove),
 	.id_table = tpa6130a2_id,
 };
 
