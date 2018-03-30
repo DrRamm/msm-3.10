@@ -1,8 +1,8 @@
 /*
 ** =========================================================================
 ** Copyright (c) 2007-2009  Immersion Corporation.  All rights reserved.
-**                          Immersion Corporation Confidential and Proprietary
-** Copyright (C) 2015 XiaoMi, Inc.
+** Copyright (C) 2017 XiaoMi, Inc.
+** Immersion Corporation Confidential and Proprietary
 **
 ** File:
 **     ImmVibeOSInternal.h
@@ -34,13 +34,13 @@ typedef char		VibeTChar;
 typedef VibeBool (*VibeOSTimerProc)(void);
 
 /* General OS functions */
-extern VibeStatus VibeOSStartTimer(VibeUInt16 intervalMs, VibeOSTimerProc timerProc, VibeOSTimerHandle *pHandle);
+extern VibeStatus VibeOSStartTimer(VibeUInt16 intervalMs, VibeOSTimerProc timerProc, VibeOSTimerHandle * pHandle);
 extern VibeStatus VibeOSIsTimerRunning(void);
 extern VibeStatus VibeOSStopTimer(VibeOSTimerHandle handle);
 extern VibeUInt32 VibeOSGetTimeMs(void);
 
-extern VibeOSMutexHandle VibeOSCreateMutex(const VibeTChar* szName);
-extern VibeOSMutexHandle VibeOSCreateMutexAcquired(const VibeTChar* szName);
+extern VibeOSMutexHandle VibeOSCreateMutex(const VibeTChar *szName);
+extern VibeOSMutexHandle VibeOSCreateMutexAcquired(const VibeTChar *szName);
 #define VibeOSCloseMutex(hMutex)
 extern void VibeOSDestroyMutex(VibeOSMutexHandle hMutex);
 extern VibeStatus VibeOSAcquireMutex(VibeOSMutexHandle hMutex);

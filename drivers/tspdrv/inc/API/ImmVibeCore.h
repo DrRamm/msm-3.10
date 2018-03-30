@@ -1,8 +1,8 @@
 /*
 ** =========================================================================
 ** Copyright (c) 2003-2012  Immersion Corporation.  All rights reserved.
-**                          Immersion Corporation Confidential and Proprietary
-** Copyright (C) 2015 XiaoMi, Inc.
+** Copyright (C) 2017 XiaoMi, Inc.
+** Immersion Corporation Confidential and Proprietary
 ** =========================================================================
 */
 /**
@@ -22,59 +22,59 @@
 /**
 \brief  Device capability type to get the device category.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be one
-        of #VIBE_DEVICECATEGORY_IFC, #VIBE_DEVICECATEGORY_IMPULSE,
-        #VIBE_DEVICECATEGORY_VIRTUAL, #VIBE_DEVICECATEGORY_EMBEDDED,
-        #VIBE_DEVICECATEGORY_TETHERED, or #VIBE_DEVICECATEGORY_IMMERSION_USB.
+		Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be one
+		of #VIBE_DEVICECATEGORY_IFC, #VIBE_DEVICECATEGORY_IMPULSE,
+		#VIBE_DEVICECATEGORY_VIRTUAL, #VIBE_DEVICECATEGORY_EMBEDDED,
+		#VIBE_DEVICECATEGORY_TETHERED, or #VIBE_DEVICECATEGORY_IMMERSION_USB.
 */
 #define VIBE_DEVCAPTYPE_DEVICE_CATEGORY             0
 
 /**
 \brief  Device capability type to get the maximum number of nested repeat bars
-        supported for Timeline effects.
+		supported for Timeline effects.
 
-        Any repeat bars nested beyond this level will be played only once.
+		Any repeat bars nested beyond this level will be played only once.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32.
+		Used with #ImmVibeGetDeviceCapabilityInt32.
 */
 #define VIBE_DEVCAPTYPE_MAX_NESTED_REPEATS          1
 
 /**
 \brief  Device capability type to get the number of actuators present on the
-        device.
+		device.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32.
+		Used with #ImmVibeGetDeviceCapabilityInt32.
 */
 #define VIBE_DEVCAPTYPE_NUM_ACTUATORS               2
 
 /**
 \brief  Device capability type to get the acutator type.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be one
-        of #VIBE_DEVACTUATORTYPE_BLDC, #VIBE_DEVACTUATORTYPE_LRA, or
-        #VIBE_DEVACTUATORTYPE_PIEZO.
+		Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be one
+		of #VIBE_DEVACTUATORTYPE_BLDC, #VIBE_DEVACTUATORTYPE_LRA, or
+		#VIBE_DEVACTUATORTYPE_PIEZO.
 */
 #define VIBE_DEVCAPTYPE_ACTUATOR_TYPE               3
 
 /**
 \brief  Device capability type to get the number of effect slots present on the
-        device.
+		device.
 
-        The number of effect slots represents the maximum number of simple
-        effects that may play simultaneously. If an attempt is made to play more
-        than this number of effects at the same time, some of the simple effects
-        will not play.
+		The number of effect slots represents the maximum number of simple
+		effects that may play simultaneously. If an attempt is made to play more
+		than this number of effects at the same time, some of the simple effects
+		will not play.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32.
+		Used with #ImmVibeGetDeviceCapabilityInt32.
 */
 #define VIBE_DEVCAPTYPE_NUM_EFFECT_SLOTS            4
 
 /**
 \brief  Device capability type to get the supported effect styles.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be a
-        bitwise ORing of #VIBE_STYLE_SMOOTH_SUPPORT, #VIBE_STYLE_STRONG_SUPPORT,
-        and #VIBE_STYLE_SHARP_SUPPORT.
+		Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be a
+		bitwise ORing of #VIBE_STYLE_SMOOTH_SUPPORT, #VIBE_STYLE_STRONG_SUPPORT,
+		and #VIBE_STYLE_SHARP_SUPPORT.
 */
 #define VIBE_DEVCAPTYPE_SUPPORTED_STYLES            5
 
@@ -82,63 +82,63 @@
 \brief  Device capability type to get the supported effect styles.
 
 \deprecated
-        Use #VIBE_DEVCAPTYPE_SUPPORTED_STYLES instead.
+		Use #VIBE_DEVCAPTYPE_SUPPORTED_STYLES instead.
 */
 #define VIBE_DEVCAPTYPE_SUPPORTED_CONTROL_MODES     VIBE_DEVCAPTYPE_SUPPORTED_STYLES
 
 /**
 \brief  Device capability type to get the minimum period for Periodic effects.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32.
+		Used with #ImmVibeGetDeviceCapabilityInt32.
 */
 #define VIBE_DEVCAPTYPE_MIN_PERIOD                  6
 
 /**
 \brief  Device capability type to get the maximum period for Periodic effects.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32.
+		Used with #ImmVibeGetDeviceCapabilityInt32.
 */
 #define VIBE_DEVCAPTYPE_MAX_PERIOD                  7
 
 /**
 \brief  Device capability type to get the maximum finite duration in
-        milliseconds for simple effects.
+		milliseconds for simple effects.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32.
+		Used with #ImmVibeGetDeviceCapabilityInt32.
 */
 #define VIBE_DEVCAPTYPE_MAX_EFFECT_DURATION         8
 
 /**
 \brief  Device capability type to get the supported effect types.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be a
-        bitwise ORing of #VIBE_MAGSWEEP_EFFECT_SUPPORT,
-        #VIBE_PERIODIC_EFFECT_SUPPORT, #VIBE_TIMELINE_EFFECT_SUPPORT,
-        #VIBE_STREAMING_EFFECT_SUPPORT, and #VIBE_WAVEFORM_EFFECT_SUPPORT.
+		Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be a
+		bitwise ORing of #VIBE_MAGSWEEP_EFFECT_SUPPORT,
+		#VIBE_PERIODIC_EFFECT_SUPPORT, #VIBE_TIMELINE_EFFECT_SUPPORT,
+		#VIBE_STREAMING_EFFECT_SUPPORT, and #VIBE_WAVEFORM_EFFECT_SUPPORT.
 */
 #define VIBE_DEVCAPTYPE_SUPPORTED_EFFECTS           9
 
 /**
 \brief  Device capability type to get the device name.
 
-        Used with #ImmVibeGetDeviceCapabilityString. The maximum device name
-        length will be #VIBE_MAX_DEVICE_NAME_LENGTH.
+		Used with #ImmVibeGetDeviceCapabilityString. The maximum device name
+		length will be #VIBE_MAX_DEVICE_NAME_LENGTH.
 */
 #define VIBE_DEVCAPTYPE_DEVICE_NAME                 10
 
 /**
 \brief  Device capability type to get the maximum attack time or fade time in
-        milliseconds for effect envelopes of simple effects.
+		milliseconds for effect envelopes of simple effects.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32.
+		Used with #ImmVibeGetDeviceCapabilityInt32.
 */
 #define VIBE_DEVCAPTYPE_MAX_ENVELOPE_TIME           11
 
 /**
 \brief  Device capability type to get the \api version number.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32. See \ref versioning for
-        details about \api version numbers.
+		Used with #ImmVibeGetDeviceCapabilityInt32. See \ref versioning for
+		details about \api version numbers.
 
 \since  Version 1.5. See \ref versioning for details about \api version numbers.
 */
@@ -146,9 +146,9 @@
 
 /**
 \brief  Device capability type to get the maximum size in bytes for IVT files
-        that can be played on a tethered device.
+		that can be played on a tethered device.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32.
+		Used with #ImmVibeGetDeviceCapabilityInt32.
 
 \since  Version 2.0. See \ref versioning for details about \api version numbers.
 */
@@ -156,25 +156,25 @@
 
 /**
 \brief  Device capability type to get the maximum size in bytes for
-        IVT files that can be played on a non-tethered device.
+		IVT files that can be played on a non-tethered device.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32.
+		Used with #ImmVibeGetDeviceCapabilityInt32.
 
 \since  Version 2.0. See \ref versioning for details about \api version numbers.
 
 \deprecated
-        As of version 3.1, the \player dynamically allocates memory for IVT
-        data; therefore, this device capability is depracated but retained for
-        backward compatibility. See \ref versioning for details about \api
-        version numbers.
+		As of version 3.1, the \player dynamically allocates memory for IVT
+		data; therefore, this device capability is depracated but retained for
+		backward compatibility. See \ref versioning for details about \api
+		version numbers.
 */
 #define VIBE_DEVCAPTYPE_MAX_IVT_SIZE                14
 
 /**
 \brief  Device capability type to get the \player edition level.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be one
-        of #VIBE_EDITION_3000, #VIBE_EDITION_4000, or #VIBE_EDITION_5000.
+		Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be one
+		of #VIBE_EDITION_3000, #VIBE_EDITION_4000, or #VIBE_EDITION_5000.
 
 \since  Version 3.1. See \ref versioning for details about \api version numbers.
 */
@@ -183,11 +183,11 @@
 /**
 \brief  Device capability type to get the supported wave types.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be a
-        bitwise ORing of #VIBE_WAVETYPE_SQUARE_SUPPORT,
-        #VIBE_WAVETYPE_TRIANGLE_SUPPORT, #VIBE_WAVETYPE_SINE_SUPPORT,
-        #VIBE_WAVETYPE_SAWTOOTHUP_SUPPORT, and
-        #VIBE_WAVETYPE_SAWTOOTHDOWN_SUPPORT.
+		Used with #ImmVibeGetDeviceCapabilityInt32. The return value will be a
+		bitwise ORing of #VIBE_WAVETYPE_SQUARE_SUPPORT,
+		#VIBE_WAVETYPE_TRIANGLE_SUPPORT, #VIBE_WAVETYPE_SINE_SUPPORT,
+		#VIBE_WAVETYPE_SAWTOOTHUP_SUPPORT, and
+		#VIBE_WAVETYPE_SAWTOOTHDOWN_SUPPORT.
 
 \since  Version 3.2. See \ref versioning for details about \api version numbers.
 */
@@ -196,10 +196,10 @@
 /**
 \brief  Device capability type to get the handset index.
 
-        Used with #ImmVibeGetDeviceCapabilityInt32. The return value will always
-        be zero on embedded devices. In Windows, where multiple tethered
-        handsets may be present, the return value indicates the handset to which
-        a device, or actuator belongs.
+		Used with #ImmVibeGetDeviceCapabilityInt32. The return value will always
+		be zero on embedded devices. In Windows, where multiple tethered
+		handsets may be present, the return value indicates the handset to which
+		a device, or actuator belongs.
 
 \since  Version 3.3. See \ref versioning for details about \api version numbers.
 */
@@ -212,17 +212,17 @@
 
 /**
 \brief  Device property type to set the OEM licence key associated with a device
-        handle.
+		handle.
 
-        Used with #ImmVibeSetDevicePropertyString. This property is write-only.
-        It can be set to an OEM license key issued by Immersion in order to use
-        higher priority levels not normally available to applications, or to set
-        the master strength. On devices with API version 3.2 or lower,
-        applications must always set this property in order to unlock the
-        ability to play effects.
+		Used with #ImmVibeSetDevicePropertyString. This property is write-only.
+		It can be set to an OEM license key issued by Immersion in order to use
+		higher priority levels not normally available to applications, or to set
+		the master strength. On devices with API version 3.2 or lower,
+		applications must always set this property in order to unlock the
+		ability to play effects.
 
-        See \ref licensing for more information. See \ref versioning for details
-        about \api version numbers.
+		See \ref licensing for more information. See \ref versioning for details
+		about \api version numbers.
 
 \sa     VIBE_DEVPROPTYPE_PRIORITY, VIBE_DEVPROPTYPE_MASTERSTRENGTH.
 */
@@ -230,74 +230,74 @@
 
 /**
 \brief  Device property type to get/set the priority of effects associated with
-        a device handle.
+		a device handle.
 
-        See \ref priority for details about priority levels.
+		See \ref priority for details about priority levels.
 
-        Used with #ImmVibeGetDevicePropertyInt32 and
-        #ImmVibeSetDevicePropertyInt32.
+		Used with #ImmVibeGetDevicePropertyInt32 and
+		#ImmVibeSetDevicePropertyInt32.
 */
 #define VIBE_DEVPROPTYPE_PRIORITY                   1
 
 /**
 \brief  Device property type to enable/disable effects associated with a device
-        handle.
+		handle.
 
-        When this property is set to true, the \player immediately stops any
-        playing effects and ignores subsequent requests to play effects. When
-        this property is false, the \playerbrief honors requests to play
-        effects.
+		When this property is set to true, the \player immediately stops any
+		playing effects and ignores subsequent requests to play effects. When
+		this property is false, the \playerbrief honors requests to play
+		effects.
 
-        Used with #ImmVibeGetDevicePropertyBool and
-        #ImmVibeSetDevicePropertyBool.
+		Used with #ImmVibeGetDevicePropertyBool and
+		#ImmVibeSetDevicePropertyBool.
 */
 #define VIBE_DEVPROPTYPE_DISABLE_EFFECTS            2
 
 /**
 \brief  Device property type to get/set the overall strength for all effects
-        associated with a device handle.
+		associated with a device handle.
 
-        The strength varies from #VIBE_MIN_MAGNITUDE (equivalent to mute) to
-        #VIBE_MAX_MAGNITUDE (full strength). The default value is
-        #VIBE_MAX_MAGNITUDE.
+		The strength varies from #VIBE_MIN_MAGNITUDE (equivalent to mute) to
+		#VIBE_MAX_MAGNITUDE (full strength). The default value is
+		#VIBE_MAX_MAGNITUDE.
 
-        The strength only applies to the device handle passed to
-        #ImmVibeGetDevicePropertyInt32 or #ImmVibeSetDevicePropertyInt32, not to
-        other device handles held by the same or a different application.
+		The strength only applies to the device handle passed to
+		#ImmVibeGetDevicePropertyInt32 or #ImmVibeSetDevicePropertyInt32, not to
+		other device handles held by the same or a different application.
 
-        Modifying the strength does not affect currently playing effects, only
-        effects played or modified after calling #ImmVibeSetDevicePropertyInt32
-        to use a new strength.
+		Modifying the strength does not affect currently playing effects, only
+		effects played or modified after calling #ImmVibeSetDevicePropertyInt32
+		to use a new strength.
 
-        Used with #ImmVibeGetDevicePropertyInt32 and
-        #ImmVibeSetDevicePropertyInt32.
+		Used with #ImmVibeGetDevicePropertyInt32 and
+		#ImmVibeSetDevicePropertyInt32.
  */
 #define VIBE_DEVPROPTYPE_STRENGTH                   3
 
 /**
 \brief  Device property type to get/set the overall master strength for all
-        effects associated with all device handles.
+		effects associated with all device handles.
 
-        The Master Strength varies from #VIBE_MIN_MAGNITUDE (equivalent to mute)
-        to #VIBE_MAX_MAGNITUDE (full strength). The default value is
-        #VIBE_MAX_MAGNITUDE.
+		The Master Strength varies from #VIBE_MIN_MAGNITUDE (equivalent to mute)
+		to #VIBE_MAX_MAGNITUDE (full strength). The default value is
+		#VIBE_MAX_MAGNITUDE.
 
-        The master strength applies to all effects on the device, including
-        effects from other applications.
+		The master strength applies to all effects on the device, including
+		effects from other applications.
 
-        Modifying the master strength immediately affects currently playing
-        effects and subsequently played or modified effects.
+		Modifying the master strength immediately affects currently playing
+		effects and subsequently played or modified effects.
 
-        Before changing the master strength, applications must call
-        #ImmVibeSetDevicePropertyString for the #VIBE_DEVPROPTYPE_LICENSE_KEY
-        property to set an OEM license key, and #ImmVibeSetDevicePropertyInt32
-        for the #VIBE_DEVPROPTYPE_PRIORITY property to associate the maximum OEM
-        priority (#VIBE_MAX_OEM_DEVICE_PRIORITY) with the device handle. See
-        \ref licensing for details about license keys, and \ref priority for
-        details about priority levels.
+		Before changing the master strength, applications must call
+		#ImmVibeSetDevicePropertyString for the #VIBE_DEVPROPTYPE_LICENSE_KEY
+		property to set an OEM license key, and #ImmVibeSetDevicePropertyInt32
+		for the #VIBE_DEVPROPTYPE_PRIORITY property to associate the maximum OEM
+		priority (#VIBE_MAX_OEM_DEVICE_PRIORITY) with the device handle. See
+		\ref licensing for details about license keys, and \ref priority for
+		details about priority levels.
 
-        Used with #ImmVibeGetDevicePropertyInt32 and
-        #ImmVibeSetDevicePropertyInt32.
+		Used with #ImmVibeGetDevicePropertyInt32 and
+		#ImmVibeSetDevicePropertyInt32.
 */
 #define VIBE_DEVPROPTYPE_MASTERSTRENGTH             4
 
@@ -307,8 +307,8 @@
 /**
 \defgroup devcategs Device Categories
 
-        Device categories returned by #ImmVibeGetDeviceCapabilityInt32 for the
-        #VIBE_DEVCAPTYPE_DEVICE_CATEGORY device capability type.
+		Device categories returned by #ImmVibeGetDeviceCapabilityInt32 for the
+		#VIBE_DEVCAPTYPE_DEVICE_CATEGORY device capability type.
 */
 /*@{*/
 
@@ -316,7 +316,7 @@
 \brief  IFC device category.
 
 \deprecated
-        The IFC device category is no longer supported.
+		The IFC device category is no longer supported.
 */
 #define VIBE_DEVICECATEGORY_IFC                     0
 
@@ -324,7 +324,7 @@
 \brief  Impulse device category.
 
 \deprecated
-        The Impulse device category is no longer supported.
+		The Impulse device category is no longer supported.
 */
 #define VIBE_DEVICECATEGORY_IMPULSE                 1
 
@@ -347,7 +347,7 @@
 \brief  Immersion USB device category.
 
 \deprecated
-        The Immersion USB device category is no longer supported.
+		The Immersion USB device category is no longer supported.
 */
 #define VIBE_DEVICECATEGORY_IMMERSION_USB           5
 
@@ -362,8 +362,8 @@
 /**
 \defgroup acttypes Actuator Types
 
-        Actuator types returned by #ImmVibeGetDeviceCapabilityInt32 for the
-        #VIBE_DEVCAPTYPE_ACTUATOR_TYPE device capability.
+		Actuator types returned by #ImmVibeGetDeviceCapabilityInt32 for the
+		#VIBE_DEVCAPTYPE_ACTUATOR_TYPE device capability.
 */
 /*@{*/
 
@@ -383,8 +383,8 @@
 \brief  Piezo-electric actuator type.
 
 \deprecated
-        As of version 3.4.52, this value has been replaced by
-        #VIBE_DEVACTUATORTYPE_PIEZO.
+		As of version 3.4.52, this value has been replaced by
+		#VIBE_DEVACTUATORTYPE_PIEZO.
 */
 #define VIBE_DEVACTUATORTYPE_PIEZO_WAVE             4
 
@@ -394,16 +394,16 @@
 /**
 \defgroup effectstyles Effect Styles
 
-        Effect styles used with #ImmVibeModifyPlayingMagSweepEffect,
-        #ImmVibeModifyPlayingPeriodicEffect, #ImmVibePlayMagSweepEffect,
-        and #ImmVibePlayPeriodicEffect.
+		Effect styles used with #ImmVibeModifyPlayingMagSweepEffect,
+		#ImmVibeModifyPlayingPeriodicEffect, #ImmVibePlayMagSweepEffect,
+		and #ImmVibePlayPeriodicEffect.
 */
 /*@{*/
 
 /**
 \brief  Effect style mask.
 
-        Effect styles are 4 bits and may be bitwise ORed with other flags.
+		Effect styles are 4 bits and may be bitwise ORed with other flags.
 */
 #define VIBE_STYLE_MASK                             0x0F
 
@@ -437,17 +437,17 @@
 /**
 \defgroup stylesupport Effect Style Support Flags
 
-        Effect style support bit flags returned by
-        #ImmVibeGetDeviceCapabilityInt32 for the
-        #VIBE_DEVCAPTYPE_SUPPORTED_STYLES device capability.
+		Effect style support bit flags returned by
+		#ImmVibeGetDeviceCapabilityInt32 for the
+		#VIBE_DEVCAPTYPE_SUPPORTED_STYLES device capability.
 */
 /*@{*/
 
 /**
 \brief  Effect style support mask.
 
-        Effect style support bit flags occupy 16 bits and may be bitwise ORed
-        with other flags.
+		Effect style support bit flags occupy 16 bits and may be bitwise ORed
+		with other flags.
 */
 #define VIBE_STYLE_SUPPORT_MASK                     0x0000FFFF
 
@@ -475,24 +475,24 @@
 /**
 \defgroup wavetypes Effect Wave Types
 
-        Periodic effect wave types used with
-        #ImmVibeModifyPlayingPeriodicEffect and #ImmVibePlayPeriodicEffect.
+		Periodic effect wave types used with
+		#ImmVibeModifyPlayingPeriodicEffect and #ImmVibePlayPeriodicEffect.
 */
 /*@{*/
 
 /**
 \brief  Periodic effect wave type shift.
 
-        Periodic effect wave types are 4 bits and may be bitwise ORed with other
-        flags.
+		Periodic effect wave types are 4 bits and may be bitwise ORed with other
+		flags.
  */
 #define VIBE_WAVETYPE_SHIFT                         4
 
 /**
 \brief  Periodic effect wave type mask.
 
-        Periodic effect wave types are 4 bits and may be bitwise ORed with other
-        flags.
+		Periodic effect wave types are 4 bits and may be bitwise ORed with other
+		flags.
  */
 #define VIBE_WAVETYPE_MASK                          0xF0
 
@@ -520,16 +520,16 @@
 /**
 \defgroup wavetypesupport Effect Wave Type Support Flags
 
-        Wave type support bit flags returned by #ImmVibeGetDeviceCapabilityInt32
-        for the #VIBE_DEVCAPTYPE_SUPPORTED_WAVE_TYPES device capability.
+		Wave type support bit flags returned by #ImmVibeGetDeviceCapabilityInt32
+		for the #VIBE_DEVCAPTYPE_SUPPORTED_WAVE_TYPES device capability.
 */
 /*@{*/
 
 /**
 \brief  Wave type support mask.
 
-        Effect wave type support bit flags occupy 16 bits and may be bitwise
-        ORed with other flags.
+		Effect wave type support bit flags occupy 16 bits and may be bitwise
+		ORed with other flags.
  */
 #define VIBE_WAVETYPE_SUPPORT_MASK                  0xFFFF0000
 
@@ -554,7 +554,7 @@
 /**
 \defgroup effectypes Effect Types
 
-        Effect types returned by #ImmVibeGetIVTEffectType.
+		Effect types returned by #ImmVibeGetIVTEffectType.
 */
 /*@{*/
 
@@ -593,9 +593,9 @@
 /**
 \defgroup effectypesupport Effect Type Support Bit Flags
 
-        Effect type support bit flags returned by
-        #ImmVibeGetDeviceCapabilityInt32 for the
-        #VIBE_DEVCAPTYPE_SUPPORTED_EFFECTS device capability.
+		Effect type support bit flags returned by
+		#ImmVibeGetDeviceCapabilityInt32 for the
+		#VIBE_DEVCAPTYPE_SUPPORTED_EFFECTS device capability.
 */
 /*@{*/
 
@@ -628,8 +628,8 @@
 /**
 \defgroup editions API Edition Levels
 
-        \api edition levels returned by #ImmVibeGetDeviceCapabilityInt32 for the
-        #VIBE_DEVCAPTYPE_EDITION_LEVEL device capability.
+		\api edition levels returned by #ImmVibeGetDeviceCapabilityInt32 for the
+		#VIBE_DEVCAPTYPE_EDITION_LEVEL device capability.
 */
 /*@{*/
 
@@ -648,9 +648,9 @@
 /**
 \defgroup prioritydefs Device Priority Levels
 
-        Device priority levels returned by #ImmVibeGetDevicePropertyInt32 or
-        used with #ImmVibeSetDevicePropertyInt32 for the
-        #VIBE_DEVPROPTYPE_PRIORITY device property.
+		Device priority levels returned by #ImmVibeGetDevicePropertyInt32 or
+		used with #ImmVibeSetDevicePropertyInt32 for the
+		#VIBE_DEVPROPTYPE_PRIORITY device property.
 */
 /*@{*/
 
@@ -667,9 +667,9 @@
 \brief Maximum device priority.
 
 \deprecated
-        This value has been replaced by #VIBE_MAX_DEV_DEVICE_PRIORITY and
-        #VIBE_MAX_OEM_DEVICE_PRIORITY to be used by third-party developers and
-        device manufacturers, respectively.
+		This value has been replaced by #VIBE_MAX_DEV_DEVICE_PRIORITY and
+		#VIBE_MAX_OEM_DEVICE_PRIORITY to be used by third-party developers and
+		device manufacturers, respectively.
 */
 #define VIBE_MAX_DEVICE_PRIORITY                    VIBE_MAX_OEM_DEVICE_PRIORITY
 
@@ -682,7 +682,7 @@
 /**
 \defgroup   devstates   Device States
 
-        Device states returned by #ImmVibeGetDeviceState.
+		Device states returned by #ImmVibeGetDeviceState.
 */
 /*@{*/
 
@@ -698,7 +698,7 @@
 /**
 \defgroup effectstates Effect States
 
-        Effect states returned by #ImmVibeGetEffectState.
+		Effect states returned by #ImmVibeGetEffectState.
 */
 /*@{*/
 
@@ -723,8 +723,8 @@
 /**
 \defgroup ivtelemtypes IVT Element Types
 
-        IVT element types for the \c m_nElementType member of the
-        #VibeIVTElement structure.
+		IVT element types for the \c m_nElementType member of the
+		#VibeIVTElement structure.
 */
 /*@{*/
 
@@ -760,29 +760,29 @@
 /**
 \brief  Invalid index.
 
-        Used to initialize device and effect indices, for example.
+		Used to initialize device and effect indices, for example.
 */
 #define VIBE_INVALID_INDEX                          -1
 
 /**
 \brief  Invalid effect handle.
 
-        Used to initialize an effect handle, for example.
+		Used to initialize an effect handle, for example.
 */
 #define VIBE_INVALID_EFFECT_HANDLE_VALUE            -1
 
 /**
 \brief  Invalid device handle.
 
-        Used to initialize a device handle, for example.
+		Used to initialize a device handle, for example.
 */
 #define VIBE_INVALID_DEVICE_HANDLE_VALUE            -1
 
 /**
 \brief  Maximum force magnitude.
 
-        Used with #ImmVibePlayMagSweepEffect and #ImmVibePlayPeriodicEffect to
-        play an effect with maximum force, for example.
+		Used with #ImmVibePlayMagSweepEffect and #ImmVibePlayPeriodicEffect to
+		play an effect with maximum force, for example.
 */
 #define VIBE_MAX_MAGNITUDE                          10000 /**< Maximum Force Magnitude */
 
@@ -792,81 +792,81 @@
 /**
 \brief  Infinite time.
 
-        Used with #ImmVibePlayMagSweepEffect and #ImmVibePlayPeriodicEffect to
-        play an effect of indefinite duration, for example.
+		Used with #ImmVibePlayMagSweepEffect and #ImmVibePlayPeriodicEffect to
+		play an effect of indefinite duration, for example.
 */
 #define VIBE_TIME_INFINITE                          VIBE_INT32_MAX
 
 /**
 \brief Maximum interpolant value.
 
-        Used with #ImmVibePlayIVTInterpolatedEffect,
-        #ImmVibeGetIVTInterpolatedEffectDuration, and
-        #ImmVibeModifyPlayingInterpolatedEffectInterpolant to
-        interpolate at the last key frame.
+		Used with #ImmVibePlayIVTInterpolatedEffect,
+		#ImmVibeGetIVTInterpolatedEffectDuration, and
+		#ImmVibeModifyPlayingInterpolatedEffectInterpolant to
+		interpolate at the last key frame.
 */
 #define VIBE_MAX_INTERPOLANT                         10000
 
 /**
 \brief  Microsecond period bit flag.
 
-        Used with #ImmVibePlayPeriodicEffect and
-        #ImmVibeModifyPlayingPeriodicEffect to specify the period in
-        microseconds.
+		Used with #ImmVibePlayPeriodicEffect and
+		#ImmVibeModifyPlayingPeriodicEffect to specify the period in
+		microseconds.
 */
 #define VIBE_PERIOD_RESOLUTION_MICROSECOND          0x80000000
 
 /**
 \brief  Infinite repeat count.
 
-        Used with #ImmVibePlayIVTEffectRepeat.
+		Used with #ImmVibePlayIVTEffectRepeat.
 */
 #define VIBE_REPEAT_COUNT_INFINITE                  255
 
 /**
 \brief  Maximum device name length.
 
-        Device names returned by #ImmVibeGetDeviceCapabilityString for the
-        #VIBE_DEVCAPTYPE_DEVICE_NAME device capability type will not exceed this
-        length.
+		Device names returned by #ImmVibeGetDeviceCapabilityString for the
+		#VIBE_DEVCAPTYPE_DEVICE_NAME device capability type will not exceed this
+		length.
 */
 #define VIBE_MAX_DEVICE_NAME_LENGTH                 64
 
 /**
 \brief  Maximum effect name length.
 
-        Effect names returned by #ImmVibeGetIVTEffectName will not exceed this
-        length.
+		Effect names returned by #ImmVibeGetIVTEffectName will not exceed this
+		length.
 */
 #define VIBE_MAX_EFFECT_NAME_LENGTH                 128
 
 /**
 \brief Maximum device capability string length.
 
-       String device capabilities returned by #ImmVibeGetDeviceCapabilityString
-       will not exceed this length.
+	   String device capabilities returned by #ImmVibeGetDeviceCapabilityString
+	   will not exceed this length.
 */
 #define VIBE_MAX_CAPABILITY_STRING_LENGTH           64
 
 /**
 \brief Maximum device property string length.
 
-       String device properties returned by #ImmVibeGetDevicePropertyString or
-       set with #ImmVibeSetDevicePropertyString will not exceed this length.
+	   String device properties returned by #ImmVibeGetDevicePropertyString or
+	   set with #ImmVibeSetDevicePropertyString will not exceed this length.
 */
 #define VIBE_MAX_PROPERTY_STRING_LENGTH             64
 
 /**
 \brief  Maximum Streaming Sample size.
 
-        Used with #ImmVibePlayStreamingSample.
+		Used with #ImmVibePlayStreamingSample.
 */
 #define VIBE_MAX_STREAMING_SAMPLE_SIZE              255
 
 /**
 \brief Maximum number of actuators that can be supported by a composite device.
 
-        Used with #ImmVibeOpenCompositeDevice.
+		Used with #ImmVibeOpenCompositeDevice.
 */
 #define VIBE_MAX_LOGICAL_DEVICE_COUNT               16
 
@@ -898,14 +898,14 @@
 /**
 \brief  Indicates a false condition.
 
-        This code is not returned by \api functions.
+		This code is not returned by \api functions.
 */
 #define VIBE_S_FALSE                                 0
 
 /**
 \brief  Indicates a true condition.
 
-        This code is not returned by \api functions.
+		This code is not returned by \api functions.
 */
 #define VIBE_S_TRUE                                  1
 
@@ -915,20 +915,20 @@
 /**
 \brief  The device handle does not have enough priority to play the effect.
 
-        Another effect is currently playing on another higher priority device
-        handle. Before playing the effect, you must call
-        #ImmVibeStopPlayingEffect or #ImmVibeStopAllPlayingEffects to stop
-        currently playing effects, or call #ImmVibeSetDevicePropertyInt32 to
-        increase value of the #VIBE_DEVPROPTYPE_PRIORITY property.
+		Another effect is currently playing on another higher priority device
+		handle. Before playing the effect, you must call
+		#ImmVibeStopPlayingEffect or #ImmVibeStopAllPlayingEffects to stop
+		currently playing effects, or call #ImmVibeSetDevicePropertyInt32 to
+		increase value of the #VIBE_DEVPROPTYPE_PRIORITY property.
 */
 #define VIBE_W_INSUFFICIENT_PRIORITY                 2
 
 /**
 \brief  Effects playing on the device handle have been disabled.
 
-        Call #ImmVibeSetDevicePropertyInt32 to set the
-        #VIBE_DEVPROPTYPE_DISABLE_EFFECTS property to false to re-enable playing
-        effects on the device handle.
+		Call #ImmVibeSetDevicePropertyInt32 to set the
+		#VIBE_DEVPROPTYPE_DISABLE_EFFECTS property to false to re-enable playing
+		effects on the device handle.
 */
 #define VIBE_W_EFFECTS_DISABLED                      3
 
@@ -938,14 +938,14 @@
 /**
 \brief  The \api is already initialized.
 
-        This status code is not returned by \api functions.
+		This status code is not returned by \api functions.
 */
 #define VIBE_E_ALREADY_INITIALIZED                  -1
 
 /**
 \brief  The \api has not been initialized.
 
-        #ImmVibeInitialize was not called or returned an error.
+		#ImmVibeInitialize was not called or returned an error.
 */
 #define VIBE_E_NOT_INITIALIZED                      -2
 
@@ -967,16 +967,16 @@
 /**
 \brief  Access to the device is locked until a valid license key is provided.
 
-        This error may be returned only by \api version 3.2 or lower. Subsequent
-        versions of the \apibrief do not require a license key. See \ref
-        licensing for details about setting license keys.
+		This error may be returned only by \api version 3.2 or lower. Subsequent
+		versions of the \apibrief do not require a license key. See \ref
+		licensing for details about setting license keys.
 */
 #define VIBE_E_DEVICE_NEEDS_LICENSE                 -8
 
 /**
 \brief  The function cannot allocate memory to complete the request.
 
-        This happens if the device runs low in memory.
+		This happens if the device runs low in memory.
 
 */
 #define VIBE_E_NOT_ENOUGH_MEMORY                    -9
@@ -984,17 +984,17 @@
 /**
 \brief  The \service is not running.
 
-        You may need to reboot the device or reinstall the \api to restore the
-        default settings.
+		You may need to reboot the device or reinstall the \api to restore the
+		default settings.
 */
 #define VIBE_E_SERVICE_NOT_RUNNING                  -10
 
 /**
 \brief  Cannot change the #VIBE_DEVPROPTYPE_MASTERSTRENGTH property because the
-        device is not using an OEM license key or the priority is not set to
-        #VIBE_MAX_OEM_DEVICE_PRIORITY.
+		device is not using an OEM license key or the priority is not set to
+		#VIBE_MAX_OEM_DEVICE_PRIORITY.
 
-        See \ref priority for details about priority levels.
+		See \ref priority for details about priority levels.
 */
 #define VIBE_E_INSUFFICIENT_PRIORITY                -11
 
@@ -1006,7 +1006,7 @@
 /**
 \brief  The function is not supported in the edition level of the \api.
 
-        See \ref editions for details about \api editions.
+		See \ref editions for details about \api editions.
 */
 #define VIBE_E_NOT_SUPPORTED                        -13
 
@@ -1016,229 +1016,215 @@
 /**
 \brief  Return status code type for \api functions.
 
-        See \ref retstatcodes.
+		See \ref retstatcodes.
 */
 typedef VibeInt32   VibeStatus;
 
 /**
 \brief  Contains information about a Periodic effect element within a
-        #VibeIVTElement structure.
+		#VibeIVTElement structure.
 
 \since  Version 3.2. See \ref versioning for details about \api version numbers.
 
 \deprecated
-        The #VibeIVTPeriodic structure has been superceded by #VibeIVTPeriodic2
-        structure as of version 3.3. See \ref versioning for details about \api
-        version numbers.
+		The #VibeIVTPeriodic structure has been superceded by #VibeIVTPeriodic2
+		structure as of version 3.3. See \ref versioning for details about \api
+		version numbers.
 */
-typedef struct
-{
-    VibeInt32       m_nDuration;
-    VibeInt32       m_nMagnitude;
-    VibeInt32       m_nPeriod;
-    VibeInt32       m_nStyle;
-    VibeInt32       m_nAttackTime;
-    VibeInt32       m_nAttackLevel;
-    VibeInt32       m_nFadeTime;
-    VibeInt32       m_nFadeLevel;
+typedef struct {
+	VibeInt32       m_nDuration;
+	VibeInt32       m_nMagnitude;
+	VibeInt32       m_nPeriod;
+	VibeInt32       m_nStyle;
+	VibeInt32       m_nAttackTime;
+	VibeInt32       m_nAttackLevel;
+	VibeInt32       m_nFadeTime;
+	VibeInt32       m_nFadeLevel;
 } VibeIVTPeriodic;
 
 /**
 \brief  Contains information about a Periodic effect element within a
-        #VibeIVTElement2 structure.
+		#VibeIVTElement2 structure.
 
-        The #VibeIVTPeriodic2 structure is identical to the #VibeIVTPeriodic
-        structure with the addition of a member specifying an actuator index
-        supporting Timeline effects targeting multiple actuators on composite
-        devices.
+		The #VibeIVTPeriodic2 structure is identical to the #VibeIVTPeriodic
+		structure with the addition of a member specifying an actuator index
+		supporting Timeline effects targeting multiple actuators on composite
+		devices.
 
 \since  Version 3.3. See \ref versioning for details about \api version numbers.
 */
-typedef struct
-{
-    VibeInt32       m_nDuration;
-    VibeInt32       m_nMagnitude;
-    VibeInt32       m_nPeriod;
-    VibeInt32       m_nStyle;
-    VibeInt32       m_nAttackTime;
-    VibeInt32       m_nAttackLevel;
-    VibeInt32       m_nFadeTime;
-    VibeInt32       m_nFadeLevel;
-    /* New in v3.3 */
-    VibeInt32       m_nActuatorIndex;
+typedef struct {
+	VibeInt32       m_nDuration;
+	VibeInt32       m_nMagnitude;
+	VibeInt32       m_nPeriod;
+	VibeInt32       m_nStyle;
+	VibeInt32       m_nAttackTime;
+	VibeInt32       m_nAttackLevel;
+	VibeInt32       m_nFadeTime;
+	VibeInt32       m_nFadeLevel;
+	/* New in v3.3 */
+	VibeInt32       m_nActuatorIndex;
 } VibeIVTPeriodic2;
 
-typedef struct
-{
-    VibeInt32       m_nDuration;
-    VibeInt32       m_nMagnitude;
-    VibeInt32       m_nPeriod;
-    VibeInt32       m_nStyle;
-    VibeInt32       m_nAttackTime;
-    VibeInt32       m_nAttackLevel;
-    VibeInt32       m_nFadeTime;
-    VibeInt32       m_nFadeLevel;
-    /* New in v3.3 */
-    VibeInt32       m_nActuatorIndex;
-    /* New in v3.6 */
-    VibeInt32       m_nRepeatGap;
+typedef struct {
+	VibeInt32       m_nDuration;
+	VibeInt32       m_nMagnitude;
+	VibeInt32       m_nPeriod;
+	VibeInt32       m_nStyle;
+	VibeInt32       m_nAttackTime;
+	VibeInt32       m_nAttackLevel;
+	VibeInt32       m_nFadeTime;
+	VibeInt32       m_nFadeLevel;
+	/* New in v3.3 */
+	VibeInt32       m_nActuatorIndex;
+	/* New in v3.6 */
+	VibeInt32       m_nRepeatGap;
 } VibeIVTLerpPeriodic;
 
 /**
 \brief  Contains information about a MagSweep effect element within a
-        #VibeIVTElement structure.
+		#VibeIVTElement structure.
 
 \since  Version 3.2. See \ref versioning for details about \api version numbers.
 
 \deprecated
-        The #VibeIVTMagSweep structure has been superceded by #VibeIVTMagSweep2
-        structure as of version 3.3. See \ref versioning for details about \api
-        version numbers.
+		The #VibeIVTMagSweep structure has been superceded by #VibeIVTMagSweep2
+		structure as of version 3.3. See \ref versioning for details about \api
+		version numbers.
 */
-typedef struct
-{
-    VibeInt32       m_nDuration;
-    VibeInt32       m_nMagnitude;
-    VibeInt32       m_nStyle;
-    VibeInt32       m_nAttackTime;
-    VibeInt32       m_nAttackLevel;
-    VibeInt32       m_nFadeTime;
-    VibeInt32       m_nFadeLevel;
+typedef struct {
+	VibeInt32       m_nDuration;
+	VibeInt32       m_nMagnitude;
+	VibeInt32       m_nStyle;
+	VibeInt32       m_nAttackTime;
+	VibeInt32       m_nAttackLevel;
+	VibeInt32       m_nFadeTime;
+	VibeInt32       m_nFadeLevel;
 } VibeIVTMagSweep;
 
 /**
 \brief  Contains information about a MagSweep effect element within a
-        #VibeIVTElement2 structure.
+		#VibeIVTElement2 structure.
 
-        The #VibeIVTMagSweep2 structure is identical to the #VibeIVTMagSweep
-        structure with the addition of a member specifying an actuator index
-        supporting Timeline effects targeting multiple actuators on composite
-        devices.
+		The #VibeIVTMagSweep2 structure is identical to the #VibeIVTMagSweep
+		structure with the addition of a member specifying an actuator index
+		supporting Timeline effects targeting multiple actuators on composite
+		devices.
 
 \since  Version 3.3. See \ref versioning for details about \api version numbers.
 */
-typedef struct
-{
-    VibeInt32       m_nDuration;
-    VibeInt32       m_nMagnitude;
-    VibeInt32       m_nStyle;
-    VibeInt32       m_nAttackTime;
-    VibeInt32       m_nAttackLevel;
-    VibeInt32       m_nFadeTime;
-    VibeInt32       m_nFadeLevel;
-    /* New in v3.3 */
-    VibeInt32       m_nActuatorIndex;
+typedef struct {
+	VibeInt32       m_nDuration;
+	VibeInt32       m_nMagnitude;
+	VibeInt32       m_nStyle;
+	VibeInt32       m_nAttackTime;
+	VibeInt32       m_nAttackLevel;
+	VibeInt32       m_nFadeTime;
+	VibeInt32       m_nFadeLevel;
+	/* New in v3.3 */
+	VibeInt32       m_nActuatorIndex;
 } VibeIVTMagSweep2;
 
-typedef struct
-{
-    VibeInt32       m_nDuration;
-    VibeInt32       m_nMagnitude;
-    VibeInt32       m_nStyle;
-    VibeInt32       m_nAttackTime;
-    VibeInt32       m_nAttackLevel;
-    VibeInt32       m_nFadeTime;
-    VibeInt32       m_nFadeLevel;
-    /* New in v3.3 */
-    VibeInt32       m_nActuatorIndex;
-    /* New in v3.6 */
-    VibeInt32       m_nRepeatGap;
+typedef struct {
+	VibeInt32       m_nDuration;
+	VibeInt32       m_nMagnitude;
+	VibeInt32       m_nStyle;
+	VibeInt32       m_nAttackTime;
+	VibeInt32       m_nAttackLevel;
+	VibeInt32       m_nFadeTime;
+	VibeInt32       m_nFadeLevel;
+	/* New in v3.3 */
+	VibeInt32       m_nActuatorIndex;
+	/* New in v3.6 */
+	VibeInt32       m_nRepeatGap;
 } VibeIVTLerpMagSweep;
 
 /**
 \brief  Represents a repeat event within a Timeline effect.
 */
-typedef struct
-{
-    VibeInt32       m_nCount;
-    VibeInt32       m_nDuration;
+typedef struct {
+	VibeInt32       m_nCount;
+	VibeInt32       m_nDuration;
 } VibeIVTRepeat;
 
 /**
 \brief  Contains information about a Waveform effect element within a
-        #VibeIVTElement3 structure.
+		#VibeIVTElement3 structure.
 
 \since  Version 3.4. See \ref versioning for details about \api version numbers.
 */
-typedef struct
-{
-    const VibeUInt8 *   m_pData;
-    VibeInt32           m_nDataSize;
-    VibeInt32           m_nSamplingRate;
-    VibeInt32           m_nBitDepth;
-    VibeInt32           m_nMagnitude;
-    VibeInt32           m_nActuatorIndex;
+typedef struct {
+	const VibeUInt8 *m_pData;
+	VibeInt32           m_nDataSize;
+	VibeInt32           m_nSamplingRate;
+	VibeInt32           m_nBitDepth;
+	VibeInt32           m_nMagnitude;
+	VibeInt32           m_nActuatorIndex;
 } VibeIVTWaveform;
 
 /**
 \brief  A Timeline effect is defined by a sequence of #VibeIVTElement
-        structures.
+		structures.
 
 \since  Version 3.2. See \ref versioning for details about \api version numbers.
 
 \deprecated
-        The #VibeIVTElement structure has been superceded by #VibeIVTElement3
-        structure as of version 3.4. See \ref versioning for details about \api
-        version numbers.
+		The #VibeIVTElement structure has been superceded by #VibeIVTElement3
+		structure as of version 3.4. See \ref versioning for details about \api
+		version numbers.
 */
-typedef struct
-{
-    VibeInt32       m_nElementType;
-    VibeInt32       m_nTime;
-    union
-    {
-        VibeIVTPeriodic     m_periodic;
-        VibeIVTMagSweep     m_magsweep;
-        VibeIVTRepeat       m_repeat;
-    } TypeSpecific;
+typedef struct {
+	VibeInt32       m_nElementType;
+	VibeInt32       m_nTime;
+	union {
+		VibeIVTPeriodic     m_periodic;
+		VibeIVTMagSweep     m_magsweep;
+		VibeIVTRepeat       m_repeat;
+	} TypeSpecific;
 } VibeIVTElement;
 
 /**
 \brief  Like the #VibeIVTElement structure but contains #VibeIVTPeriodic2 and
-        #VibeIVTMagSweep2 structures instead of #VibeIVTPeriodic and
-        #VibeIVTMagSweep structures, respectively.
+		#VibeIVTMagSweep2 structures instead of #VibeIVTPeriodic and
+		#VibeIVTMagSweep structures, respectively.
 
-        The #VibeIVTElement2 structure is more general than the #VibeIVTElement
-        structure and supports Timeline effects targeting multiple actuators on
-        composite devices.
+		The #VibeIVTElement2 structure is more general than the #VibeIVTElement
+		structure and supports Timeline effects targeting multiple actuators on
+		composite devices.
 
 \since  Version 3.3. See \ref versioning for details about \api version numbers.
 
 \deprecated
-        The #VibeIVTElement2 structure has been superceded by #VibeIVTElement3
-        structure as of version 3.4. See \ref versioning for details about \api
-        version numbers.
+		The #VibeIVTElement2 structure has been superceded by #VibeIVTElement3
+		structure as of version 3.4. See \ref versioning for details about \api
+		version numbers.
 */
-typedef struct
-{
-    VibeInt32       m_nElementType;
-    VibeInt32       m_nTime;
-    union
-    {
-        VibeIVTPeriodic2    m_periodic;
-        VibeIVTMagSweep2    m_magsweep;
-        VibeIVTRepeat       m_repeat;
-    } TypeSpecific;
+typedef struct {
+	VibeInt32       m_nElementType;
+	VibeInt32       m_nTime;
+	union {
+		VibeIVTPeriodic2    m_periodic;
+		VibeIVTMagSweep2    m_magsweep;
+		VibeIVTRepeat       m_repeat;
+	} TypeSpecific;
 } VibeIVTElement2;
 
 /**
 \brief  Like the #VibeIVTElement2 structure but contains additionally a
-        #VibeIVTWaveform structure and therefore supports Waveform effects.
+		#VibeIVTWaveform structure and therefore supports Waveform effects.
 
 \since  Version 3.4. See \ref versioning for details about \api version numbers.
 */
-typedef struct
-{
-    VibeInt32       m_nElementType;
-    VibeInt32       m_nTime;
-    union
-    {
-        VibeIVTPeriodic2    m_periodic;
-        VibeIVTMagSweep2    m_magsweep;
-        VibeIVTRepeat       m_repeat;
-        /* New in v3.4 */
-        VibeIVTWaveform     m_waveform;
-    } TypeSpecific;
+typedef struct {
+	VibeInt32       m_nElementType;
+	VibeInt32       m_nTime;
+	union {
+		VibeIVTPeriodic2    m_periodic;
+		VibeIVTMagSweep2    m_magsweep;
+		VibeIVTRepeat       m_repeat;
+		/* New in v3.4 */
+		VibeIVTWaveform     m_waveform;
+	} TypeSpecific;
 } VibeIVTElement3;
 
 #endif /* IMMVIBECORE_H */

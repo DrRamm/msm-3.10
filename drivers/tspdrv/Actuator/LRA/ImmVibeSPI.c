@@ -1,8 +1,8 @@
 /*
 ** =========================================================================
 ** Copyright (c) 2007-2011  Immersion Corporation.  All rights reserved.
-**                          Immersion Corporation Confidential and Proprietary
-** Copyright (C) 2015 XiaoMi, Inc.
+** Copyright (C) 2017 XiaoMi, Inc.
+** Immersion Corporation Confidential and Proprietary
 **
 ** File:
 **     ImmVibeSPI.c
@@ -24,7 +24,7 @@
 ** Called to allocate the specified amount of space in the DIAG output buffer.
 ** OEM must review this function and verify if the proposed function is used in their software package.
 */
-void* ImmVibeSPI_Diag_BufPktAlloc(int nLength)
+void *ImmVibeSPI_Diag_BufPktAlloc(int nLength)
 {
 #error Please implement
 
@@ -105,7 +105,7 @@ VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 /*
 ** Called by the real-time loop to set force output, and enable amp if required
 */
-VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8* pForceOutputBuffer)
+VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8 *pForceOutputBuffer)
 {
 #error Please implement
 
@@ -132,39 +132,6 @@ VibeStatus ImmVibeSPI_ForceOut_SetFrequency(VibeUInt8 nActuatorIndex, VibeUInt16
 {
 #error Please review the code between the #if and #endif
 
-#if 0
-	/*
-	** The following code is provided as sample. If enabled, it will allow device
-	** frequency parameters tuning via the ImmVibeSetDeviceKernelParameter API.
-	** Please modify as required.
-	*/
-	switch (nFrequencyParameterID)
-	{
-		case VIBE_KP_CFG_FREQUENCY_PARAM1:
-			/* Update frequency parameter 1 */
-			break;
-
-		case VIBE_KP_CFG_FREQUENCY_PARAM2:
-			/* Update frequency parameter 2 */
-			break;
-
-		case VIBE_KP_CFG_FREQUENCY_PARAM3:
-			/* Update frequency parameter 3 */
-			break;
-
-		case VIBE_KP_CFG_FREQUENCY_PARAM4:
-			/* Update frequency parameter 4 */
-			break;
-
-		case VIBE_KP_CFG_FREQUENCY_PARAM5:
-			/* Update frequency parameter 5 */
-			break;
-
-		case VIBE_KP_CFG_FREQUENCY_PARAM6:
-			/* Update frequency parameter 6 */
-			break;
-	}
-#endif
 
 	return VIBE_S_SUCCESS;
 }
@@ -200,12 +167,6 @@ VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, char *szDevName, 
 {
 #error Please review the code between the #if and #endif
 
-#if 0   /* The following code is provided as sample. Please modify as required. */
-	if ((!szDevName) || (nSize < 1)) return VIBE_E_FAIL;
-
-	strncpy(szDevName, "Generic", nSize-1);
-	szDevName[nSize - 1] = '\0';	/* make sure the string is NULL terminated */
-#endif
 
 	return VIBE_S_SUCCESS;
 }

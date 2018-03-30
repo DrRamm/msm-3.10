@@ -8,7 +8,7 @@
 **     to control PWM duty cycle, amp enable/disable, save IVT file, etc...
 **
 ** Portions Copyright (c) 2008-2012 Immersion Corporation. All Rights Reserved.
-** Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
 **
 ** This file contains Original Code and/or Modifications of Original Code
 ** as defined in and that are subject to the GNU Public License v2 -
@@ -63,7 +63,7 @@
 /*
 ** Global variables
 */
-static bool g_bAmpEnabled = false;
+static bool g_bAmpEnabled;
 static struct pwm_device *g_pPWMDev;
 
 /*
@@ -72,7 +72,7 @@ static struct pwm_device *g_pPWMDev;
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex)
 {
 	if (g_bAmpEnabled) {
-		//DbgOut((KERN_DEBUG "ImmVibeSPI_ForceOut_AmpDisable %d.\n", nActuatorIndex));
+
 		g_bAmpEnabled = false;
 
 		/* Disable LRA PWM */
@@ -102,17 +102,17 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 static void AmpEnable(VibeUInt8 nActuatorIndex)
 {
 	if (!g_bAmpEnabled) {
-		//DbgOut((KERN_DEBUG "AmpEnable %d.\n", nActuatorIndex));
+
 		g_bAmpEnabled = true;
 
 		/* Enable PWM for LRA */
-		// turn on amp (for adux1001 chip)
+
 		gpio_direction_output(GPIO_VIBTONE_EN1, GPIO_LEVEL_HIGH);
 
-		// enable LRA drive signal pin, but only after init sequence
+
 		pwm_config(g_pPWMDev, PWM_ZERO_MAGNITUDE, PWM_PERIOD);
 		pwm_enable(g_pPWMDev);
-		// wait 1.5 msecs for chip to power up
+
 		schedule_timeout_interruptible(msecs_to_jiffies(1));
 	}
 }
@@ -122,7 +122,7 @@ static void AmpEnable(VibeUInt8 nActuatorIndex)
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 {
-	//DbgOut((KERN_DEBUG "ImmVibeSPI_ForceOut_Initialize.\n"));
+
 
 	/* Init LRA controller */
 	if (gpio_request(GPIO_VIBTONE_EN1, "vibrator-en") >= 0) {
@@ -148,12 +148,12 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 {
-	//DbgOut((KERN_DEBUG "ImmVibeSPI_ForceOut_Terminate.\n"));
+
 
 	/* Disable amp */
 	ImmVibeSPI_ForceOut_AmpDisable(0);
 
-	// Free LRA PWM and GPIO
+
 	gpio_direction_output(GPIO_VIBTONE_EN1, GPIO_LEVEL_LOW);
 	pwm_free(g_pPWMDev);
 	gpio_free(GPIO_VIBTONE_EN1);
@@ -174,24 +174,24 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetFrequency(VibeUInt8 nActuatorInd
 ** Called by the real-time loop to set force output, and enable amp if required
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex,
-	VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8* pForceOutputBuffer)
+	VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8 *pForceOutputBuffer)
 {
 	/* Empty buffer is okay */
-	if (0 == nBufferSizeInBytes) return VIBE_S_SUCCESS;
+	if (0 == nBufferSizeInBytes)
+	return VIBE_S_SUCCESS;
 
-	if ((0 == nActuatorIndex) && (8 == nOutputSignalBitDepth) && (1 == nBufferSizeInBytes))
-	{
+	if ((0 == nActuatorIndex) && (8 == nOutputSignalBitDepth) && (1 == nBufferSizeInBytes)) {
 		VibeInt8 force = pForceOutputBuffer[0];
 
 		if (force == 0) {
-			// Turn off the amp to disable autotune braking
+
 			ImmVibeSPI_ForceOut_AmpDisable(0);
 		} else {
 			AmpEnable(0);
 			if (force > 0) {
-				// > 50% duty = vibration, <= 50% duty = braking
+
 				unsigned int duty = ((unsigned int)(128 - force) * (unsigned int)PWM_PERIOD) >> 8;
-				// PWM output is inverted at the kernel level
+
 				pwm_config(g_pPWMDev, duty, PWM_PERIOD);
 			} else
 				pwm_config(g_pPWMDev, PWM_BRAKING_MAGNITUDE, PWM_PERIOD);
@@ -210,12 +210,12 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, cha
 {
 	char szDeviceName[VIBE_MAX_DEVICE_NAME_LENGTH] = "TS3000 Device";
 
-	//DbgOut((KERN_DEBUG "ImmVibeSPI_Device_GetName.\n"));
+
 
 	if ((strlen(szDeviceName) + 8) >= nSize)
 		return VIBE_E_FAIL;
 
-	sprintf(szDevName, "%s DRV2603", szDeviceName);
+	snprintf(szDevName, "%s DRV2603", szDeviceName);
 
 	return VIBE_S_SUCCESS;
 }

@@ -8,7 +8,7 @@
 **     to control PWM duty cycle, amp enable/disable, save IVT file, etc...
 **
 ** Portions Copyright (c) 2012 Immersion Corporation. All Rights Reserved.
-** Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
 **
 ** This file contains Original Code and/or Modifications of Original Code
 ** as defined in and that are subject to the GNU Public License v2 -
@@ -328,187 +328,175 @@
 #define ERM_OVERDRIVE_CLAMP_VOLTAGE             0x90
 
 static int g_nDeviceID = -1;
-static struct i2c_client* g_pTheClient = NULL;
-static bool g_bAmpEnabled = false;
-static bool g_bNeedToRestartPlayBack = false;
+static struct i2c_client *g_pTheClient;
+static bool g_bAmpEnabled;
+static bool g_bNeedToRestartPlayBack;
 
 static const unsigned char ERM_autocal_sequence[] = {
-    MODE_REG,                       AUTO_CALIBRATION,
-    REAL_TIME_PLAYBACK_REG,         REAL_TIME_PLAYBACK_CALIBRATION_STRENGTH,
-    LIBRARY_SELECTION_REG,          0x00,
-    WAVEFORM_SEQUENCER_REG,         WAVEFORM_SEQUENCER_DEFAULT,
-    WAVEFORM_SEQUENCER_REG2,        WAVEFORM_SEQUENCER_DEFAULT,
-    WAVEFORM_SEQUENCER_REG3,        WAVEFORM_SEQUENCER_DEFAULT,
-    WAVEFORM_SEQUENCER_REG4,        WAVEFORM_SEQUENCER_DEFAULT,
-    WAVEFORM_SEQUENCER_REG5,        WAVEFORM_SEQUENCER_DEFAULT,
-    WAVEFORM_SEQUENCER_REG6,        WAVEFORM_SEQUENCER_DEFAULT,
-    WAVEFORM_SEQUENCER_REG7,        WAVEFORM_SEQUENCER_DEFAULT,
-    WAVEFORM_SEQUENCER_REG8,        WAVEFORM_SEQUENCER_DEFAULT,
-    OVERDRIVE_TIME_OFFSET_REG,      0x00,
-    SUSTAIN_TIME_OFFSET_POS_REG,    0x00,
-    SUSTAIN_TIME_OFFSET_NEG_REG,    0x00,
-    BRAKE_TIME_OFFSET_REG,          0x00,
-    AUDIO_HAPTICS_CONTROL_REG,      AUDIO_HAPTICS_RECT_20MS | AUDIO_HAPTICS_FILTER_125HZ,
-    AUDIO_HAPTICS_MIN_INPUT_REG,    AUDIO_HAPTICS_MIN_INPUT_VOLTAGE,
-    AUDIO_HAPTICS_MAX_INPUT_REG,    AUDIO_HAPTICS_MAX_INPUT_VOLTAGE,
-    AUDIO_HAPTICS_MIN_OUTPUT_REG,   AUDIO_HAPTICS_MIN_OUTPUT_VOLTAGE,
-    AUDIO_HAPTICS_MAX_OUTPUT_REG,   AUDIO_HAPTICS_MAX_OUTPUT_VOLTAGE,
-    RATED_VOLTAGE_REG,              ERM_RATED_VOLTAGE,
-    OVERDRIVE_CLAMP_VOLTAGE_REG,    ERM_OVERDRIVE_CLAMP_VOLTAGE,
-    AUTO_CALI_RESULT_REG,           DEFAULT_ERM_AUTOCAL_COMPENSATION,
-    AUTO_CALI_BACK_EMF_RESULT_REG,  DEFAULT_ERM_AUTOCAL_BACKEMF,
-    FEEDBACK_CONTROL_REG,           FB_BRAKE_FACTOR_3X | LOOP_RESPONSE_MEDIUM | FEEDBACK_CONTROL_BEMF_ERM_GAIN2,
-    Control1_REG,                   STARTUP_BOOST_ENABLED | DEFAULT_DRIVE_TIME,
-    Control2_REG,                   BIDIRECT_INPUT | AUTO_RES_GAIN_MEDIUM | BLANKING_TIME_SHORT | IDISS_TIME_SHORT,
-    Control3_REG,                   ERM_OpenLoop_Enabled | NG_Thresh_2,
-    AUTOCAL_MEM_INTERFACE_REG,      AUTOCAL_TIME_500MS,
-    GO_REG,                         GO,
+	MODE_REG,                       AUTO_CALIBRATION,
+	REAL_TIME_PLAYBACK_REG,         REAL_TIME_PLAYBACK_CALIBRATION_STRENGTH,
+	LIBRARY_SELECTION_REG,          0x00,
+	WAVEFORM_SEQUENCER_REG,         WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG2,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG3,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG4,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG5,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG6,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG7,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG8,        WAVEFORM_SEQUENCER_DEFAULT,
+	OVERDRIVE_TIME_OFFSET_REG,      0x00,
+	SUSTAIN_TIME_OFFSET_POS_REG,    0x00,
+	SUSTAIN_TIME_OFFSET_NEG_REG,    0x00,
+	BRAKE_TIME_OFFSET_REG,          0x00,
+	AUDIO_HAPTICS_CONTROL_REG,      AUDIO_HAPTICS_RECT_20MS | AUDIO_HAPTICS_FILTER_125HZ,
+	AUDIO_HAPTICS_MIN_INPUT_REG,    AUDIO_HAPTICS_MIN_INPUT_VOLTAGE,
+	AUDIO_HAPTICS_MAX_INPUT_REG,    AUDIO_HAPTICS_MAX_INPUT_VOLTAGE,
+	AUDIO_HAPTICS_MIN_OUTPUT_REG,   AUDIO_HAPTICS_MIN_OUTPUT_VOLTAGE,
+	AUDIO_HAPTICS_MAX_OUTPUT_REG,   AUDIO_HAPTICS_MAX_OUTPUT_VOLTAGE,
+	RATED_VOLTAGE_REG,              ERM_RATED_VOLTAGE,
+	OVERDRIVE_CLAMP_VOLTAGE_REG,    ERM_OVERDRIVE_CLAMP_VOLTAGE,
+	AUTO_CALI_RESULT_REG,           DEFAULT_ERM_AUTOCAL_COMPENSATION,
+	AUTO_CALI_BACK_EMF_RESULT_REG,  DEFAULT_ERM_AUTOCAL_BACKEMF,
+	FEEDBACK_CONTROL_REG,           FB_BRAKE_FACTOR_3X | LOOP_RESPONSE_MEDIUM | FEEDBACK_CONTROL_BEMF_ERM_GAIN2,
+	Control1_REG,                   STARTUP_BOOST_ENABLED | DEFAULT_DRIVE_TIME,
+	Control2_REG,                   BIDIRECT_INPUT | AUTO_RES_GAIN_MEDIUM | BLANKING_TIME_SHORT | IDISS_TIME_SHORT,
+	Control3_REG,                   ERM_OpenLoop_Enabled | NG_Thresh_2,
+	AUTOCAL_MEM_INTERFACE_REG,      AUTOCAL_TIME_500MS,
+	GO_REG,                         GO,
 };
 
-static void drv2604_write_reg_val(const unsigned char* data, unsigned int size)
+static void drv2604_write_reg_val(const unsigned char *data, unsigned int size)
 {
-    int i = 0;
+	int i = 0;
 
-    if (size % 2 != 0)
-        return;
+	if (size % 2 != 0)
+		return;
 
-    while (i < size)
-    {
-        i2c_smbus_write_byte_data(g_pTheClient, data[i], data[i+1]);
-        i+=2;
-    }
+	while (i < size) {
+		i2c_smbus_write_byte_data(g_pTheClient, data[i], data[i+1]);
+		i += 2;
+	}
 }
 
 static void drv2604_set_go_bit(char val)
 {
-    char go[] =
-    {
-        GO_REG, val
-    };
-    drv2604_write_reg_val(go, sizeof(go));
+	char go[] = {
+		GO_REG, val
+	};
+	drv2604_write_reg_val(go, sizeof(go));
 }
 
 static unsigned char drv2604_read_reg(unsigned char reg)
 {
-    return i2c_smbus_read_byte_data(g_pTheClient, reg);
+	return i2c_smbus_read_byte_data(g_pTheClient, reg);
 }
 
 static void drv2604_poll_go_bit(void)
 {
-    while (drv2604_read_reg(GO_REG) == GO)
-      schedule_timeout_interruptible(msecs_to_jiffies(GO_BIT_POLL_INTERVAL));
+	while (drv2604_read_reg(GO_REG) == GO)
+	  schedule_timeout_interruptible(msecs_to_jiffies(GO_BIT_POLL_INTERVAL));
 }
 
 static void drv2604_set_rtp_val(char value)
 {
-    char rtp_val[] =
-    {
-        REAL_TIME_PLAYBACK_REG, value
-    };
-    drv2604_write_reg_val(rtp_val, sizeof(rtp_val));
+	char rtp_val[] = {
+		REAL_TIME_PLAYBACK_REG, value
+	};
+	drv2604_write_reg_val(rtp_val, sizeof(rtp_val));
 }
 
 static void drv2604_change_mode(char mode)
 {
-    unsigned char tmp[] =
-    {
-        MODE_REG, mode
-    };
-    drv2604_write_reg_val(tmp, sizeof(tmp));
+	unsigned char tmp[] = {
+		MODE_REG, mode
+	};
+	drv2604_write_reg_val(tmp, sizeof(tmp));
 }
 
-static int drv2604_probe(struct i2c_client* client, const struct i2c_device_id* id);
-static int drv2604_remove(struct i2c_client* client);
-static const struct i2c_device_id drv2604_id[] =
-{
-    {DRV2604_BOARD_NAME, 0},
-    {}
+static int drv2604_probe(struct i2c_client *client, const struct i2c_device_id *id);
+static int drv2604_remove(struct i2c_client *client);
+static const struct i2c_device_id drv2604_id[] = {
+	{DRV2604_BOARD_NAME, 0},
+	{}
 };
 
 static struct i2c_board_info info = {
-  I2C_BOARD_INFO(DRV2604_BOARD_NAME, DEVICE_ADDR),
+	I2C_BOARD_INFO(DRV2604_BOARD_NAME, DEVICE_ADDR),
 };
 
-static struct i2c_driver drv2604_driver =
-{
-    .probe = drv2604_probe,
-    .remove = drv2604_remove,
-    .id_table = drv2604_id,
-    .driver =
-    {
-        .name = DRV2604_BOARD_NAME,
-    },
+static struct i2c_driver drv2604_driver = {
+	.probe = drv2604_probe,
+	.remove = drv2604_remove,
+	.id_table = drv2604_id,
+	.driver = {
+		.name = DRV2604_BOARD_NAME,
+	},
 };
 
-static int drv2604_probe(struct i2c_client* client, const struct i2c_device_id* id)
+static int drv2604_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-    char status;
-    int nCalibrationCount = 0;
+	char status;
+	int nCalibrationCount = 0;
 
-    if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
-    {
-        DbgOut((DBL_ERROR, "drv2605 probe failed"));
-        return -ENODEV;
-    }
+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+		DbgOut((DBL_ERROR, "drv2605 probe failed"));
+		return -ENODEV;
+	}
 
-    /* Wait 30 us */
-    udelay(30);
-    g_pTheClient = client;
+	/* Wait 30 us */
+	udelay(30);
+	g_pTheClient = client;
 
-    /* Run auto-calibration */
-    do{
-        drv2604_write_reg_val(ERM_autocal_sequence, sizeof(ERM_autocal_sequence));
+	/* Run auto-calibration */
+	do {
+		drv2604_write_reg_val(ERM_autocal_sequence, sizeof(ERM_autocal_sequence));
 
-        /* Wait until the procedure is done */
-        drv2604_poll_go_bit();
+		/* Wait until the procedure is done */
+		drv2604_poll_go_bit();
 
-        /* Read status */
-        status = drv2604_read_reg(STATUS_REG);
+		/* Read status */
+		status = drv2604_read_reg(STATUS_REG);
 
-        nCalibrationCount++;
+		nCalibrationCount++;
 
-    } while (((status & DIAG_RESULT_MASK) == AUTO_CAL_FAILED) && (nCalibrationCount < MAX_AUTOCALIBRATION_ATTEMPT));
+	} while (((status & DIAG_RESULT_MASK) == AUTO_CAL_FAILED) && (nCalibrationCount < MAX_AUTOCALIBRATION_ATTEMPT));
 
-    /* Check result */
-    if ((status & DIAG_RESULT_MASK) == AUTO_CAL_FAILED)
-    {
-      DbgOut((DBL_ERROR, "drv2604 auto-calibration failed after %d attempts.\n", nCalibrationCount));
-    }
-    else
-    {
-        /* Read calibration results */
-        drv2604_read_reg(AUTO_CALI_RESULT_REG);
-        drv2604_read_reg(AUTO_CALI_BACK_EMF_RESULT_REG);
-        drv2604_read_reg(FEEDBACK_CONTROL_REG);
-    }
+	/* Check result */
+	if ((status & DIAG_RESULT_MASK) == AUTO_CAL_FAILED) {
+	  DbgOut((DBL_ERROR, "drv2604 auto-calibration failed after %d attempts.\n", nCalibrationCount));
+	} else{
+		/* Read calibration results */
+		drv2604_read_reg(AUTO_CALI_RESULT_REG);
+		drv2604_read_reg(AUTO_CALI_BACK_EMF_RESULT_REG);
+		drv2604_read_reg(FEEDBACK_CONTROL_REG);
+	}
 
-    /* Read device ID */
-    g_nDeviceID = (status & DEV_ID_MASK);
-    switch (g_nDeviceID)
-    {
-        case DRV2605:
-            DbgOut((DBL_INFO, "drv2604 driver found: drv2605.\n"));
-            break;
-        case DRV2604:
-            DbgOut((DBL_INFO, "drv2604 driver found: drv2604.\n"));
-            break;
-        default:
-            DbgOut((DBL_INFO, "drv2604 driver found: unknown.\n"));
-            break;
-    }
+	/* Read device ID */
+	g_nDeviceID = (status & DEV_ID_MASK);
+	switch (g_nDeviceID) {
+	case DRV2605:
+		DbgOut((DBL_INFO, "drv2604 driver found: drv2605.\n"));
+		break;
+	case DRV2604:
+		DbgOut((DBL_INFO, "drv2604 driver found: drv2604.\n"));
+		break;
+	default:
+		DbgOut((DBL_INFO, "drv2604 driver found: unknown.\n"));
+		break;
+	}
 
-    /* Put hardware in standby */
-    drv2604_change_mode(MODE_STANDBY);
+	/* Put hardware in standby */
+	drv2604_change_mode(MODE_STANDBY);
 
-    DbgOut((DBL_INFO, "drv2604 probe succeeded"));
+	DbgOut((DBL_INFO, "drv2604 probe succeeded"));
 
-  return 0;
+	return 0;
 }
 
-static int drv2604_remove(struct i2c_client* client)
+static int drv2604_remove(struct i2c_client *client)
 {
-    DbgOut((DBL_VERBOSE, "drv2604_remove.\n"));
-    return 0;
+	DbgOut((DBL_VERBOSE, "drv2604_remove.\n"));
+	return 0;
 }
 
 /*
@@ -516,19 +504,18 @@ static int drv2604_remove(struct i2c_client* client)
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex)
 {
-    if (g_bAmpEnabled)
-    {
-        DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_AmpDisable.\n"));
+	if (g_bAmpEnabled) {
+		DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_AmpDisable.\n"));
 
-        /* Set the force to 0 */
-        drv2604_set_rtp_val(0);
+		/* Set the force to 0 */
+		drv2604_set_rtp_val(0);
 
-        /* Put hardware in standby */
-        drv2604_change_mode(MODE_STANDBY);
+		/* Put hardware in standby */
+		drv2604_change_mode(MODE_STANDBY);
 
-        g_bAmpEnabled = false;
-    }
-    return VIBE_S_SUCCESS;
+		g_bAmpEnabled = false;
+	}
+	return VIBE_S_SUCCESS;
 }
 
 /*
@@ -536,14 +523,13 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 {
-    if (!g_bAmpEnabled)
-    {
-        DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_AmpEnable.\n"));
-        drv2604_change_mode(MODE_REAL_TIME_PLAYBACK);
-        g_bAmpEnabled = true;
-        g_bNeedToRestartPlayBack = true;
-    }
-    return VIBE_S_SUCCESS;
+	if (!g_bAmpEnabled) {
+		DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_AmpEnable.\n"));
+		drv2604_change_mode(MODE_REAL_TIME_PLAYBACK);
+		g_bAmpEnabled = true;
+		g_bNeedToRestartPlayBack = true;
+	}
+	return VIBE_S_SUCCESS;
 }
 
 /*
@@ -551,39 +537,39 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 {
-    struct i2c_adapter* adapter;
-    struct i2c_client* client;
+	struct i2c_adapter *adapter;
+	struct i2c_client *client;
 
-    DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_Initialize.\n"));
+	DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_Initialize.\n"));
 
-    g_bAmpEnabled = true;   /* to force ImmVibeSPI_ForceOut_AmpDisable disabling the amp */
+	g_bAmpEnabled = true;   /* to force ImmVibeSPI_ForceOut_AmpDisable disabling the amp */
 
-    adapter = i2c_get_adapter(DEVICE_BUS);
+	adapter = i2c_get_adapter(DEVICE_BUS);
 
-    if (adapter) {
-        client = i2c_new_device(adapter, &info);
+	if (adapter) {
+		client = i2c_new_device(adapter, &info);
 
-        if (client) {
-            int retVal = i2c_add_driver(&drv2604_driver);
+		if (client) {
+			int retVal = i2c_add_driver(&drv2604_driver);
 
-            if (retVal) {
-                return VIBE_E_FAIL;
-            }
+			if (retVal) {
+				return VIBE_E_FAIL;
+			}
 
-        } else {
-            DbgOut((DBL_VERBOSE, "drv2605: Cannot create new device.\n"));
-            return VIBE_E_FAIL;
-        }
+		} else {
+			DbgOut((DBL_VERBOSE, "drv2605: Cannot create new device.\n"));
+			return VIBE_E_FAIL;
+		}
 
-    } else {
-        DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_AmpDisable.\n"));
+	} else {
+		DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_AmpDisable.\n"));
 
-        return VIBE_E_FAIL;
-    }
+		return VIBE_E_FAIL;
+	}
 
-    ImmVibeSPI_ForceOut_AmpDisable(0);
+	ImmVibeSPI_ForceOut_AmpDisable(0);
 
-    return VIBE_S_SUCCESS;
+	return VIBE_S_SUCCESS;
 }
 
 /*
@@ -591,32 +577,32 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 {
-    DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_Terminate.\n"));
+	DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_Terminate.\n"));
 
-    ImmVibeSPI_ForceOut_AmpDisable(0);
+	ImmVibeSPI_ForceOut_AmpDisable(0);
 
-    /* Remove TS5000 driver */
-    i2c_del_driver(&drv2604_driver);
+	/* Remove TS5000 driver */
+	i2c_del_driver(&drv2604_driver);
 
-    /* Reverse i2c_new_device */
-    i2c_unregister_device(g_pTheClient);
+	/* Reverse i2c_new_device */
+	i2c_unregister_device(g_pTheClient);
 
-    return VIBE_S_SUCCESS;
+	return VIBE_S_SUCCESS;
 }
 
 /*
 ** Called by the real-time loop to set the force
 */
-IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8* pForceOutputBuffer)
+IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8 * pForceOutputBuffer)
 {
-    drv2604_set_rtp_val(pForceOutputBuffer[0]);
+	drv2604_set_rtp_val(pForceOutputBuffer[0]);
 
-    if (g_bNeedToRestartPlayBack)
-        drv2604_set_go_bit(GO);
+	if (g_bNeedToRestartPlayBack)
+		drv2604_set_go_bit(GO);
 
-    g_bNeedToRestartPlayBack = false;
+	g_bNeedToRestartPlayBack = false;
 
-    return VIBE_S_SUCCESS;
+	return VIBE_S_SUCCESS;
 }
 
 /*
@@ -624,35 +610,35 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetFrequency(VibeUInt8 nActuatorIndex, VibeUInt16 nFrequencyParameterID, VibeUInt32 nFrequencyParameterValue)
 {
-    if (nActuatorIndex != 0) return VIBE_S_SUCCESS;
+	if (nActuatorIndex != 0)
+	return VIBE_S_SUCCESS;
 
-    switch (nFrequencyParameterID)
-    {
-        case VIBE_KP_CFG_FREQUENCY_PARAM1:
-            /* Update frequency parameter 1 */
-            break;
+	switch (nFrequencyParameterID) {
+	case VIBE_KP_CFG_FREQUENCY_PARAM1:
+		/* Update frequency parameter 1 */
+		break;
 
-        case VIBE_KP_CFG_FREQUENCY_PARAM2:
-            /* Update frequency parameter 2 */
-            break;
+	case VIBE_KP_CFG_FREQUENCY_PARAM2:
+		/* Update frequency parameter 2 */
+		break;
 
-        case VIBE_KP_CFG_FREQUENCY_PARAM3:
-            /* Update frequency parameter 3 */
-            break;
+	case VIBE_KP_CFG_FREQUENCY_PARAM3:
+		/* Update frequency parameter 3 */
+		break;
 
-        case VIBE_KP_CFG_FREQUENCY_PARAM4:
-            /* Update frequency parameter 4 */
-            break;
+	case VIBE_KP_CFG_FREQUENCY_PARAM4:
+		/* Update frequency parameter 4 */
+		break;
 
-        case VIBE_KP_CFG_FREQUENCY_PARAM5:
-            /* Update frequency parameter 5 */
-            break;
+	case VIBE_KP_CFG_FREQUENCY_PARAM5:
+		/* Update frequency parameter 5 */
+		break;
 
-        case VIBE_KP_CFG_FREQUENCY_PARAM6:
-            /* Update frequency parameter 6 */
-            break;
-    }
-    return VIBE_S_SUCCESS;
+	case VIBE_KP_CFG_FREQUENCY_PARAM6:
+		/* Update frequency parameter 6 */
+		break;
+	}
+	return VIBE_S_SUCCESS;
 }
 
 /*
@@ -660,24 +646,24 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetFrequency(VibeUInt8 nActuatorInd
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, char *szDevName, int nSize)
 {
-    if ((!szDevName) || (nSize < 1)) return VIBE_E_FAIL;
+	if ((!szDevName) || (nSize < 1))
+	return VIBE_E_FAIL;
 
-    DbgOut((DBL_VERBOSE, "ImmVibeSPI_Device_GetName.\n"));
+	DbgOut((DBL_VERBOSE, "ImmVibeSPI_Device_GetName.\n"));
 
-    switch (g_nDeviceID)
-    {
-        case DRV2605:
-            strncpy(szDevName, "DRV2605", nSize-1);
-            break;
-        case DRV2604:
-            strncpy(szDevName, "DRV2604", nSize-1);
-            break;
-        default:
-            strncpy(szDevName, "Unknown", nSize-1);
-            break;
-    }
+	switch (g_nDeviceID) {
+	case DRV2605:
+		strlcpy(szDevName, "DRV2605", nSize-1);
+		break;
+	case DRV2604:
+		strlcpy(szDevName, "DRV2604", nSize-1);
+		break;
+	default:
+		strlcpy(szDevName, "Unknown", nSize-1);
+		break;
+	}
 
-    szDevName[nSize - 1] = '\0'; /* make sure the string is NULL terminated */
+	szDevName[nSize - 1] = '\0'; /* make sure the string is NULL terminated */
 
-    return VIBE_S_SUCCESS;
+	return VIBE_S_SUCCESS;
 }

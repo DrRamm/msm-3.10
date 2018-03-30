@@ -7,7 +7,7 @@
 #    Targets Kernel 2.6
 #
 # Portions Copyright (c) 2008-2012 Immersion Corporation. All Rights Reserved.
-# Copyright (C) 2015 XiaoMi, Inc.
+# Copyright (C) 2017 XiaoMi, Inc.
 #
 # This file contains Original Code and/or Modifications of Original Code
 # as defined in and that are subject to the GNU Public License v2 -
@@ -27,10 +27,10 @@
 # =========================================================================
 
 ifeq ($(KERNEL_ROOT),)
-    override KERNEL_ROOT = /usr/src/linux
+	override KERNEL_ROOT = /usr/src/linux
 endif
 
-EXTRA_CFLAGS += -I$(shell pwd)
+EXTRA_CFLAGS += -I$(M)
 
 obj-$(CONFIG_TSPDRV) += tspdrv.o
 

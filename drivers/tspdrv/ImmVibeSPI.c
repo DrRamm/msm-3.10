@@ -8,7 +8,7 @@
 **	to control PWM duty cycle, amp enable/disable, save IVT file, etc...
 **
 ** Portions Copyright (c) 2012 Immersion Corporation. All Rights Reserved.
-** Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
 **
 ** This file contains Original Code and/or Modifications of Original Code
 ** as defined in and that are subject to the GNU Public License v2 -
@@ -27,8 +27,8 @@
 ** under the License.
 ** =========================================================================
 */
-//#warning ********* Compiling SPI for DRV2604 using LRA actuator ************
-//#warning *********** Customized version for Xiaomi M3 **********
+
+
 
 #ifdef IMMVIBESPIAPI
 #undef IMMVIBESPIAPI
@@ -52,7 +52,6 @@
 #include <linux/syscalls.h>
 #include <asm/uaccess.h>
 
-/* From Xiaomi start */
 #include <linux/gpio.h>
 
 #include <linux/sched.h>
@@ -83,13 +82,12 @@
 #define DRV2604_USE_PWM_MODE 0
 #define DRV2604_USE_RTP_MODE (1-DRV2604_USE_PWM_MODE)
 
-/* From Xiaomi end */
 
 /*
 ** Enable workqueue to allow DRV2604 time to brake
 ** Modified by Immersion 18.3.2014: Make autobrake dynamic based on actuator type
 */
-//#define GUARANTEE_AUTOTUNE_BRAKE_TIME 0
+
 
 /*
 ** Enable to use DRV2604 EN pin to enter standby mode
@@ -146,7 +144,7 @@
 #define DIAG_BAD		(1 << 3)
 
 #define DEV_ID_MASK (7 << 5)
-#define DRV2605 (3 << 5) // per DRV2604 datasheet
+#define DRV2605 (3 << 5)
 #define DRV2604 (4 << 5)
 
 /*
@@ -303,7 +301,7 @@
 #define STARTUP_BOOST_ENABLED	(1 << 7)
 #define STARTUP_BOOST_DISABLED  (0 << 7) /* default */
 #define AC_COUPLE_ENABLED	(1 << 5)
-#define AC_COUPLE_DISABLED	(0 << 5) // default
+#define AC_COUPLE_DISABLED	(0 << 5)
 
 
 /*
@@ -340,7 +338,7 @@
 ** Control3
 */
 #define Control3_REG 0x1D
-#define INPUT_PWM		(0 << 1) // default
+#define INPUT_PWM		(0 << 1)
 #define INPUT_ANALOG		(1 << 1)
 #define ERM_OpenLoop_Enabled	(1 << 5)
 #define NG_Thresh_1		(1 << 6)
@@ -380,10 +378,7 @@
 /*
 	GPIO port that enable power to the device
 */
-#if 0
-#define GPIO_VIBTONE_EN1 86
-#define GPIO_PORT GPIO_VIBTONE_EN1
-#endif
+
 #define GPIO_LEVEL_LOW 0
 #define GPIO_LEVEL_HIGH 1
 
@@ -409,34 +404,34 @@
 #if (LRA_SELECTION == LRA_SEMCO1036)
 #define LRA_RATED_VOLTAGE		0x4E
 #define LRA_OVERDRIVE_CLAMP_VOLTAGE	0xA4
-#define LRA_RTP_STRENGTH		0x7F // 100% of rated voltage (closed loop)
+#define LRA_RTP_STRENGTH		0x7F
 
 #elif (LRA_SELECTION == LRA_SEMCO0934)
 #define LRA_RATED_VOLTAGE		0x51
 #define LRA_OVERDRIVE_CLAMP_VOLTAGE	0x72
-#define LRA_RTP_STRENGTH		0x7F // 100% of rated voltage (closed loop)
+#define LRA_RTP_STRENGTH		0x7F
 
 #elif (LRA_SELECTION == LRA_BLUECOM)
-#define LRA_RATED_VOLTAGE		0x53
-#define LRA_OVERDRIVE_CLAMP_VOLTAGE	0xA4
-#define LRA_RTP_STRENGTH		0x7F // 100% of rated voltage (closed loop)
+#define LRA_RATED_VOLTAGE		0x33
+#define LRA_OVERDRIVE_CLAMP_VOLTAGE	0x54
+#define LRA_RTP_STRENGTH		0x7F
 
 #else
 #define LRA_RATED_VOLTAGE			0x60
 #define LRA_OVERDRIVE_CLAMP_VOLTAGE		0x9E
-#define LRA_RTP_STRENGTH		0x7F // 100% of rated voltage (closed loop)
+#define LRA_RTP_STRENGTH		0x7F
 
 #endif
 
-// for X4 ERM moto
+
 #define ERM_RATED_VOLTAGE			0x7F
 #define ERM_OVERDRIVE_CLAMP_VOLTAGE		0x9B
 #define DEFAULT_ERM_AUTOCAL_COMPENSATION	0x04
 #define DEFAULT_ERM_AUTOCAL_BACKEMF		0xA7
 
-// for X5 SEMCO
+
 #define X5LRA_RATED_VOLTAGE                     0x30
-#define X5LRA_OVERDRIVE_CLAMP_VOLTAGE           0x55
+#define X5LRA_OVERDRIVE_CLAMP_VOLTAGE           0x35
 
 
 #define STANDBY_WAKE_DELAY	1
@@ -446,11 +441,11 @@
 #define MAX_REVISION_STRING_SIZE 10
 
 static int g_nDeviceID = -1;
-static struct i2c_client* g_pTheClient = NULL;
-static bool g_bAmpEnabled = false;
-static bool g_brake = false;
-static bool g_autotune_brake_enabled = false;
-static bool g_bNeedToRestartPlayBack = false;
+static struct i2c_client *g_pTheClient;
+static bool g_bAmpEnabled;
+static bool g_brake;
+static bool g_autotune_brake_enabled;
+static bool g_bNeedToRestartPlayBack ;
 static unsigned GPIO_VIBTONE_EN1 = 86;
 
 #define MAX_TIMEOUT 10000 /* 10s */
@@ -458,21 +453,33 @@ static unsigned GPIO_VIBTONE_EN1 = 86;
 
 #define PWM_CH_ID 3
 
-static struct kobject *vibe_kobj;
-static int vibe_strength;
 
 #define IMMVIBESPI_MULTIPARAM_SUPPORT
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetParamFileId(void) {
 
 	unsigned int hwv = get_hw_version_major();
 
-        if (hwv == 4)
+	if (hwv == 4)
 		return 1;
 	else if (hwv == 5)
 		return 2;
-        else
+	else
 		return 0;
 }
+
+struct pwm_device {
+	struct list_head node;
+	struct platform_device *pdev;
+
+	const char *label;
+	struct clk *clk;
+
+	int clk_enb;
+	void __iomem *mmio_base;
+
+	unsigned int in_use;
+	unsigned int id;
+};
 
 static struct vibrator {
 	struct wake_lock wklock;
@@ -487,7 +494,7 @@ static struct vibrator {
 #if SUPPORT_WRITE_PAT
 	struct work_struct pat_work;
 	struct workqueue_struct *hap_wq;
-	signed char* pat;
+	signed char *pat;
 	int pat_len;
 	int pat_i;
 	int pat_mode;
@@ -549,38 +556,38 @@ static const unsigned char LRA_init_sequence[] = {
 };
 
 static const unsigned char X5LRA_init_sequence[] = {
-       MODE_REG,                       MODE_INTERNAL_TRIGGER,
-       REAL_TIME_PLAYBACK_REG,         REAL_TIME_PLAYBACK_CALIBRATION_STRENGTH,
-       LIBRARY_SELECTION_REG,          0x00,
-       WAVEFORM_SEQUENCER_REG,         WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG2,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG3,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG4,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG5,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG6,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG7,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG8,        WAVEFORM_SEQUENCER_DEFAULT,
-       GO_REG,                         STOP,
-       OVERDRIVE_TIME_OFFSET_REG,      0x00,
-       SUSTAIN_TIME_OFFSET_POS_REG,    0x00,
-       SUSTAIN_TIME_OFFSET_NEG_REG,    0x00,
-       BRAKE_TIME_OFFSET_REG,          0x00,
-       AUDIO_HAPTICS_CONTROL_REG,      AUDIO_HAPTICS_RECT_20MS | AUDIO_HAPTICS_FILTER_125HZ,
-       AUDIO_HAPTICS_MIN_INPUT_REG,    AUDIO_HAPTICS_MIN_INPUT_VOLTAGE,
-       AUDIO_HAPTICS_MAX_INPUT_REG,    AUDIO_HAPTICS_MAX_INPUT_VOLTAGE,
-       AUDIO_HAPTICS_MIN_OUTPUT_REG,   AUDIO_HAPTICS_MIN_OUTPUT_VOLTAGE,
-       AUDIO_HAPTICS_MAX_OUTPUT_REG,   AUDIO_HAPTICS_MAX_OUTPUT_VOLTAGE,
-       RATED_VOLTAGE_REG,              X5LRA_RATED_VOLTAGE,
-       OVERDRIVE_CLAMP_VOLTAGE_REG,    X5LRA_OVERDRIVE_CLAMP_VOLTAGE,
-       AUTO_CALI_RESULT_REG,           0x08,
-       AUTO_CALI_BACK_EMF_RESULT_REG,  0x8E,
-       FEEDBACK_CONTROL_REG,           0xA9,
-       Control1_REG,                   0x8F,//STARTUP_BOOST_ENABLED | DEFAULT_DRIVE_TIME,     /* From Xiaomi */
-       Control2_REG,                   0xF5,
-       Control3_REG,                   NG_Thresh_2 ,  /* From Xiaomi */
-       Control5_REG,                   0x80,
-       LRA_OPEN_LOOP_PERIOD,           0x2a,
-       AUTOCAL_MEM_INTERFACE_REG,      0x30,
+	MODE_REG,                       MODE_INTERNAL_TRIGGER,
+	REAL_TIME_PLAYBACK_REG,         REAL_TIME_PLAYBACK_CALIBRATION_STRENGTH,
+	LIBRARY_SELECTION_REG,          0x00,
+	WAVEFORM_SEQUENCER_REG,         WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG2,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG3,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG4,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG5,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG6,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG7,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG8,        WAVEFORM_SEQUENCER_DEFAULT,
+	GO_REG,                         STOP,
+	OVERDRIVE_TIME_OFFSET_REG,      0x00,
+	SUSTAIN_TIME_OFFSET_POS_REG,    0x00,
+	SUSTAIN_TIME_OFFSET_NEG_REG,    0x00,
+	BRAKE_TIME_OFFSET_REG,          0x00,
+	AUDIO_HAPTICS_CONTROL_REG,      AUDIO_HAPTICS_RECT_20MS | AUDIO_HAPTICS_FILTER_125HZ,
+	AUDIO_HAPTICS_MIN_INPUT_REG,    AUDIO_HAPTICS_MIN_INPUT_VOLTAGE,
+	AUDIO_HAPTICS_MAX_INPUT_REG,    AUDIO_HAPTICS_MAX_INPUT_VOLTAGE,
+	AUDIO_HAPTICS_MIN_OUTPUT_REG,   AUDIO_HAPTICS_MIN_OUTPUT_VOLTAGE,
+	AUDIO_HAPTICS_MAX_OUTPUT_REG,   AUDIO_HAPTICS_MAX_OUTPUT_VOLTAGE,
+	RATED_VOLTAGE_REG,              X5LRA_RATED_VOLTAGE,
+	OVERDRIVE_CLAMP_VOLTAGE_REG,    X5LRA_OVERDRIVE_CLAMP_VOLTAGE,
+	AUTO_CALI_RESULT_REG,           0x08,
+	AUTO_CALI_BACK_EMF_RESULT_REG,  0x8E,
+	FEEDBACK_CONTROL_REG,           0xA9,
+	Control1_REG,                   0x8F,
+	Control2_REG,                   0xF5,
+	Control3_REG,                   NG_Thresh_2 ,  /* From Xiaomi */
+	Control5_REG,                   0x80,
+	LRA_OPEN_LOOP_PERIOD,           0x2a,
+	AUTOCAL_MEM_INTERFACE_REG,      0x30,
 };
 
 
@@ -608,8 +615,8 @@ static const unsigned char ERM_init_sequence[] = {
 	AUDIO_HAPTICS_MAX_OUTPUT_REG,	AUDIO_HAPTICS_MAX_OUTPUT_VOLTAGE,
 	RATED_VOLTAGE_REG,		ERM_RATED_VOLTAGE,
 	OVERDRIVE_CLAMP_VOLTAGE_REG,	ERM_OVERDRIVE_CLAMP_VOLTAGE,
-	AUTO_CALI_RESULT_REG,		0x05,  //DEFAULT_ERM_AUTOCAL_COMPENSATION,
-	AUTO_CALI_BACK_EMF_RESULT_REG,	0x9F,  //DEFAULT_ERM_AUTOCAL_BACKEMF,
+	AUTO_CALI_RESULT_REG,		0x05,
+	AUTO_CALI_BACK_EMF_RESULT_REG,	0x9F,
 	FEEDBACK_CONTROL_REG,		FB_BRAKE_FACTOR_4X | LOOP_RESPONSE_MEDIUM | FEEDBACK_CONTROL_BEMF_LRA_GAIN2,
 	Control1_REG,			STARTUP_BOOST_ENABLED | DEFAULT_DRIVE_TIME,	/* From Xiaomi */
 	Control2_REG,			BIDIRECT_INPUT | SOFT_BRAKE | AUTO_RES_GAIN_HIGH | BLANKING_TIME_MEDIUM | IDISS_TIME_MEDIUM,
@@ -618,36 +625,36 @@ static const unsigned char ERM_init_sequence[] = {
 };
 
 static unsigned char NID_init_sequence[] = {
-       MODE_REG,                       0x00,
-       REAL_TIME_PLAYBACK_REG,         0xFF,
-       LIBRARY_SELECTION_REG,          0x00,
-       WAVEFORM_SEQUENCER_REG,         WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG2,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG3,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG4,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG5,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG6,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG7,        WAVEFORM_SEQUENCER_DEFAULT,
-       WAVEFORM_SEQUENCER_REG8,        WAVEFORM_SEQUENCER_DEFAULT,
-       GO_REG,                         STOP,
-       OVERDRIVE_TIME_OFFSET_REG,      0x00,
-       SUSTAIN_TIME_OFFSET_POS_REG,    0x00,
-       SUSTAIN_TIME_OFFSET_NEG_REG,    0x00,
-       BRAKE_TIME_OFFSET_REG,          0x00,
-       AUDIO_HAPTICS_CONTROL_REG,      AUDIO_HAPTICS_RECT_20MS | AUDIO_HAPTICS_FILTER_125HZ,
-       AUDIO_HAPTICS_MIN_INPUT_REG,    AUDIO_HAPTICS_MIN_INPUT_VOLTAGE,
-       AUDIO_HAPTICS_MAX_INPUT_REG,    AUDIO_HAPTICS_MAX_INPUT_VOLTAGE,
-       AUDIO_HAPTICS_MIN_OUTPUT_REG,   AUDIO_HAPTICS_MIN_OUTPUT_VOLTAGE,
-       AUDIO_HAPTICS_MAX_OUTPUT_REG,   AUDIO_HAPTICS_MAX_OUTPUT_VOLTAGE,
-       RATED_VOLTAGE_REG,              0xFF,
-       OVERDRIVE_CLAMP_VOLTAGE_REG,    0xFF,
-       AUTO_CALI_RESULT_REG,           0x0D,
-       AUTO_CALI_BACK_EMF_RESULT_REG,  0x6D,
-       FEEDBACK_CONTROL_REG,           0x36,
-       Control1_REG,                   0x93,   /* From Xiaomi */
-       Control2_REG,                   0xF5,
-       Control3_REG,                   0xA8,  /* From Xiaomi */
-       AUTOCAL_MEM_INTERFACE_REG,      0x08,
+	MODE_REG,                       0x00,
+	REAL_TIME_PLAYBACK_REG,         0xFF,
+	LIBRARY_SELECTION_REG,          0x00,
+	WAVEFORM_SEQUENCER_REG,         WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG2,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG3,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG4,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG5,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG6,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG7,        WAVEFORM_SEQUENCER_DEFAULT,
+	WAVEFORM_SEQUENCER_REG8,        WAVEFORM_SEQUENCER_DEFAULT,
+	GO_REG,                         STOP,
+	OVERDRIVE_TIME_OFFSET_REG,      0x00,
+	SUSTAIN_TIME_OFFSET_POS_REG,    0x00,
+	SUSTAIN_TIME_OFFSET_NEG_REG,    0x00,
+	BRAKE_TIME_OFFSET_REG,          0x00,
+	AUDIO_HAPTICS_CONTROL_REG,      AUDIO_HAPTICS_RECT_20MS | AUDIO_HAPTICS_FILTER_125HZ,
+	AUDIO_HAPTICS_MIN_INPUT_REG,    AUDIO_HAPTICS_MIN_INPUT_VOLTAGE,
+	AUDIO_HAPTICS_MAX_INPUT_REG,    AUDIO_HAPTICS_MAX_INPUT_VOLTAGE,
+	AUDIO_HAPTICS_MIN_OUTPUT_REG,   AUDIO_HAPTICS_MIN_OUTPUT_VOLTAGE,
+	AUDIO_HAPTICS_MAX_OUTPUT_REG,   AUDIO_HAPTICS_MAX_OUTPUT_VOLTAGE,
+	RATED_VOLTAGE_REG,              0xFF,
+	OVERDRIVE_CLAMP_VOLTAGE_REG,    0xFF,
+	AUTO_CALI_RESULT_REG,           0x0D,
+	AUTO_CALI_BACK_EMF_RESULT_REG,  0x6D,
+	FEEDBACK_CONTROL_REG,           0x36,
+	Control1_REG,                   0x93,   /* From Xiaomi */
+	Control2_REG,                   0xF5,
+	Control3_REG,                   0xA8,  /* From Xiaomi */
+	AUTOCAL_MEM_INTERFACE_REG,      0x08,
 };
 
 static size_t seq_size;
@@ -656,19 +663,19 @@ static unsigned int g_hw_version = 3;
 
 #endif
 
-static void drv2604_write_reg_val(const unsigned char* data, unsigned int size)
+static void drv2604_write_reg_val(const unsigned char *data, unsigned int size)
 {
 	int i = 0;
 
 	if (size % 2 != 0)
 		return;
 
-	if(g_hw_version == 5) {
+	if (g_hw_version == 5) {
 		while (i < size) {
 			/* From Xiaomi start */
 			pr_debug("drv2604 x5 write 0x%02x, 0x%02x", data[i], data[i + 1]);
 			/* From Xiaomi end */
-			if(data[i] == 0x02)
+			if (data[i] == 0x02)
 				i2c_smbus_write_byte_data(g_pTheClient, data[i], 0xFF);
 			else
 				i2c_smbus_write_byte_data(g_pTheClient, data[i], data[i + 1]);
@@ -684,18 +691,10 @@ static void drv2604_write_reg_val(const unsigned char* data, unsigned int size)
 		}
 	}
 }
-/*
-static void drv2604_set_go_bit(char val)
-{
-	char go[] = {GO_REG, val};
-
-	drv2604_write_reg_val(go, sizeof(go));
-}
-*/
 static unsigned char drv2604_read_reg(unsigned char reg)
 {
 /* From Xiaomi start */
-//	return i2c_smbus_read_byte_data(g_pTheClient, reg);
+
 
 	unsigned char data;
 	struct i2c_msg msgs[2];
@@ -744,34 +743,14 @@ static void drv2604_change_mode(char mode)
 	unsigned char tmp[] = {MODE_REG, mode};
 
 	drv2604_write_reg_val(tmp, sizeof(tmp));;
-//	usleep_range(4000,5000); /* Added by Xiaomi */
-}
 
-static ssize_t pwmvalue_show(struct device *dev,
-                struct device_attribute *attr, char *buf)
-{
-        size_t count = 0;
-        count += sprintf(buf, "%d\n", vibe_strength);
-        return count;
 }
-
-static ssize_t pwmvalue_store(struct device *dev,
-                struct device_attribute *attr, const char *buf, size_t count)
-{
-	int vs = 0;
-        sscanf(buf, "%d ",&vs);
-        if (vs < 0 || vs > 127) vs = 100;
-	vibe_strength = vs;
-        return count;
-}
-
-static DEVICE_ATTR(pwmvalue, (S_IWUSR|S_IRUGO), pwmvalue_show, pwmvalue_store);
 
 /* - Xiaomi - timed output interface -------------------------------------------------------------------------------- */
 #define YES 1
 #define NO  0
 
-//extern int pwm_duty_enable(struct pwm_device *pwm, u32 duty);
+
 
 static int vibrator_is_playing = NO;
 
@@ -823,11 +802,7 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 			/* Only change the mode if not already in RTP mode; RTP input already set at init */
 			if (mode != MODE_REAL_TIME_PLAYBACK) {
 				drv2604_change_mode(MODE_REAL_TIME_PLAYBACK);
-				if (get_hw_version_major() == 4 || get_hw_version_major() == 5) {
-					drv2604_set_rtp_val(REAL_TIME_PLAYBACK_CALIBRATION_STRENGTH);
-				} else {
-					drv2604_set_rtp_val(vibe_strength);
-				}
+				drv2604_set_rtp_val(REAL_TIME_PLAYBACK_CALIBRATION_STRENGTH);
 				vibrator_is_playing = YES;
 				g_bAmpEnabled = true;
 			}
@@ -852,7 +827,7 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 		vibrator_off();
 
 	mutex_unlock(&vibdata.lock);
-#endif // SUPPORT_TIMED_OUTPUT
+#endif
 }
 
 static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
@@ -868,7 +843,7 @@ static void vibrator_work(struct work_struct *work)
 	mutex_unlock(&vibdata.lock);
 }
 
-static unsigned char g_dbg_reg = 0;
+static unsigned char g_dbg_reg;
 static int drv2604_dbg_get(void *data, u64 *val)
 {
 	*val = g_nDeviceID;
@@ -881,11 +856,12 @@ static int drv2604_dbg_set(void *data, u64 val)
 	unsigned char v = val & 0xFF;
 	g_dbg_reg = (val & 0xFF00) >> 8;
 
-	if(v == 0xFF) return 0;
+	if (v == 0xFF)
+	return 0;
 
 	i2c_smbus_write_byte_data(g_pTheClient, g_dbg_reg, val);
 	pr_info("drv2604 dbg write 0x%02x 0x%02x", g_dbg_reg, v);
-        return 0;
+	return 0;
 }
 
 DEFINE_SIMPLE_ATTRIBUTE(drv2604_dbg, drv2604_dbg_get, drv2604_dbg_set, "%llu\n");
@@ -901,14 +877,14 @@ static void drv2604_pat_work(struct work_struct *work)
 		time = (u8)vibdata.pat[i + 1];
 		if (vibdata.pat[i] != 0) {
 			value = (vibdata.pat[i] > 0)?(vibdata.pat[i]):0;
-			if(value > 126)
+			if (value > 126)
 				value = 256;
 			else
 				value += 128;
 			pwm_duty_enable(vibdata.pwm_dev, value);
 			msleep(time);
 		} else {
-			if ((time == 0) || (i + 2 >= vibdata.pat_len )) { /* the end */
+			if ((time == 0) || (i + 2 >= vibdata.pat_len)) { /* the end */
 				pwm_disable(vibdata.pwm_dev);
 				drv2604_change_mode(MODE_STANDBY);
 				pr_debug("drv2604 vib len:%d time:%d", vibdata.pat_len, time);
@@ -918,7 +894,7 @@ static void drv2604_pat_work(struct work_struct *work)
 				msleep(time);
 			}
 		}
-		pr_debug("%s: %d vib:%d time:%d value:%u",__func__, i, vibdata.pat[i], time, value);
+		pr_debug("%s: %d vib:%d time:%d value:%u", __func__, i, vibdata.pat[i], time, value);
 	}
 	wake_unlock(&vibdata.wklock);
 }
@@ -940,7 +916,7 @@ static ssize_t drv2604_write_pattern(struct file *filp, struct kobject *kobj,
 	cancel_work_sync(&vibdata.pat_work);
 
 	memcpy(pattern, buffer, count);
-	pattern[count] = 0;	// add 0 in end in case user forgot to disable
+	pattern[count] = 0;
 	pattern[count + 1] = 0;
 	vibdata.pat_mode = pattern[0];
 	vibdata.pat_len = count + 2;
@@ -951,12 +927,11 @@ static ssize_t drv2604_write_pattern(struct file *filp, struct kobject *kobj,
 
 	mutex_unlock(&vibdata.lock);
 #endif
-#endif // SUPPORT_TIMED_OUTPUT
+#endif
 	return 0;
 }
 
-static struct timed_output_dev to_dev =
-{
+static struct timed_output_dev to_dev = {
 	.name		= "vibrator",
 	.get_time	= vibrator_get_time,
 	.enable	 = vibrator_enable,
@@ -971,10 +946,9 @@ static struct bin_attribute drv2604_bin_attrs = {
 	.size	= PAT_MAX_LEN + 1,
 };
 
-static int drv2604_probe(struct i2c_client* client, const struct i2c_device_id* id);
-static int drv2604_remove(struct i2c_client* client);
-static const struct i2c_device_id drv2604_id[] =
-{
+static int drv2604_probe(struct i2c_client *client, const struct i2c_device_id *id);
+static int drv2604_remove(struct i2c_client *client);
+static const struct i2c_device_id drv2604_id[] = {
 	{DRV2604_BOARD_NAME, 0},
 	{}
 };
@@ -983,19 +957,17 @@ static struct i2c_board_info info = {
 	I2C_BOARD_INFO(DRV2604_BOARD_NAME, DEVICE_ADDR),
 };
 
-static struct i2c_driver drv2604_driver =
-{
+static struct i2c_driver drv2604_driver = {
 	.probe = drv2604_probe,
 	.remove = drv2604_remove,
 	.id_table = drv2604_id,
-	.driver =
-	{
+	.driver = {
 		.name = DRV2604_BOARD_NAME,
 	},
 };
 
 /* From Xiaomi */
-static int drv2604_probe(struct i2c_client* client, const struct i2c_device_id* id)
+static int drv2604_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	char status;
 #if SKIP_LRA_AUTOCAL == 0
@@ -1015,8 +987,8 @@ static int drv2604_probe(struct i2c_client* client, const struct i2c_device_id* 
 	udelay(30);
 	g_pTheClient = client;
 	g_hw_version = get_hw_version_major();
-	if(g_hw_version == 5)
-		 if(get_hw_version_minor() != 1)
+	if (g_hw_version == 5)
+		 if (get_hw_version_minor() != 1)
 			g_hw_version = 6;
 
 	/* compatible with x3,x5 (LRA) and x4 (ERM) */
@@ -1112,7 +1084,7 @@ static int drv2604_probe(struct i2c_client* client, const struct i2c_device_id* 
 	return 0;
 }
 
-static int drv2604_remove(struct i2c_client* client)
+static int drv2604_remove(struct i2c_client *client)
 {
 	DbgOut((DBL_VERBOSE, "drv2604 on M3 removed.\n"));
 	return 0;
@@ -1120,7 +1092,7 @@ static int drv2604_remove(struct i2c_client* client)
 
 #define AUTOTUNE_BRAKE_TIME 35
 
-static VibeInt8 g_lastForce = 0;
+static VibeInt8 g_lastForce;
 
 static void autotune_brake_complete(struct work_struct *work)
 {
@@ -1147,8 +1119,7 @@ static struct workqueue_struct *g_workqueue;
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex)
 {
-	if (g_bAmpEnabled)
-	{
+	if (g_bAmpEnabled) {
 		DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_AmpDisable.\n"));
 
 		/* Set the force to 0 */
@@ -1167,8 +1138,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex
 			queue_delayed_work(g_workqueue,
 				&g_brake_complete,
 				msecs_to_jiffies(AUTOTUNE_BRAKE_TIME));
-		} else /* disable immediately (smooth effect style) */
-		{
+		} else /* disable immediately (smooth effect style) */ {
 #if USE_DRV2604_STANDBY
 			/* Put hardware in standby via i2c */
 			drv2604_change_mode(MODE_STANDBY);
@@ -1190,7 +1160,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 {
 	if (!g_bAmpEnabled) {
 		DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_AmpEnable.\n"));
-	if(g_autotune_brake_enabled)
+	if (g_autotune_brake_enabled)
 		cancel_delayed_work_sync(&g_brake_complete);
 
 #if USE_DRV2604_EN_PIN
@@ -1208,12 +1178,12 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 		/* From Xiaomi end */
 #endif
 #endif
-		// Chip requires minimum 250us power-up delay before RTP value can be set
-		// If the chip is powered on <10ms after powering off, it needs 1000us
-		// for the internal LDO voltage to stabilize
 
-		if(g_hw_version == 6) {
-			// X5 use 2604L, dont need to sleep
+
+
+
+		if (g_hw_version == 6) {
+
 		} else {
 			usleep_range(1000, 1000);
 
@@ -1237,16 +1207,14 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 {
-	struct i2c_adapter* adapter;
-	struct i2c_client* client;
-	int retVal = 0;
+	struct i2c_adapter *adapter;
+	struct i2c_client *client;
 
 	DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_Initialize.\n"));
 
 	g_bAmpEnabled = true;	/* to force ImmVibeSPI_ForceOut_AmpDisable disabling the amp */
 
 /* From Xiaomi start*/
-	vibe_strength = REAL_TIME_PLAYBACK_CALIBRATION_STRENGTH;
 	if (get_hw_version_major() == 5)
 		GPIO_VIBTONE_EN1 = 64;
 	else
@@ -1264,7 +1232,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 		client = i2c_new_device(adapter, &info);
 
 		if (client) {
-			retVal = i2c_add_driver(&drv2604_driver);
+			int retVal = i2c_add_driver(&drv2604_driver);
 
 			if (retVal)
 				return VIBE_E_FAIL;
@@ -1277,7 +1245,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 		return VIBE_E_FAIL;
 	}
 
-	if(g_autotune_brake_enabled)
+	if (g_autotune_brake_enabled)
 		g_workqueue = create_workqueue("tspdrv_workqueue");
 
 /* From Xiaomi start */
@@ -1290,7 +1258,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 		return VIBE_E_FAIL;
 	}
 
-	if ( device_create_bin_file(to_dev.dev, &drv2604_bin_attrs)) {
+	if (device_create_bin_file(to_dev.dev, &drv2604_bin_attrs)) {
 		printk(KERN_ALERT"drv2604: fail to create timed output dev: pattern\n");
 		return VIBE_E_FAIL;
 	}
@@ -1298,30 +1266,14 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 	hrtimer_init(&vibdata.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	vibdata.timer.function = vibrator_timer_func;
 	INIT_WORK(&vibdata.work, vibrator_work);
-	// INIT_WORK(&vibdata.work_play_eff, play_effect);
+
 
 	wake_lock_init(&vibdata.wklock, WAKE_LOCK_SUSPEND, "vibrator");
 	mutex_init(&vibdata.lock);
-
-	/* PWM */
-	/*
-	vibdata.pwm_dev = pwm_request(PWM_CH_ID, "drv2604");
-	if (IS_ERR(vibdata.pwm_dev))
-		dev_err(&client->dev, "%s: pwm request failed\n", __func__);
-	*/
 	printk(KERN_ALERT"drv2604: initialized on M3\n");
 /* From Xiaomi end */
 
 	ImmVibeSPI_ForceOut_AmpDisable(0);
-
-	vibe_kobj = kobject_create_and_add("vibrator", NULL);
-	if (!vibe_kobj)
-		return VIBE_S_SUCCESS;
-
-	retVal = sysfs_create_file(vibe_kobj, &dev_attr_pwmvalue.attr);
-
-	if (retVal)
-		DbgOut((DBL_VERBOSE, "drv2604: vibrator creat fail.\n"));
 
 	return VIBE_S_SUCCESS;
 }
@@ -1333,8 +1285,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 {
 	DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_Terminate.\n"));
 
-	if (g_autotune_brake_enabled && g_workqueue)
-	{
+	if (g_autotune_brake_enabled && g_workqueue) {
 		destroy_workqueue(g_workqueue);
 		g_workqueue = 0;
 	}
@@ -1342,7 +1293,6 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 	ImmVibeSPI_ForceOut_AmpDisable(0);
 
 /* From Xiaomi start */
-	kobject_del(vibe_kobj);
 	gpio_direction_output(GPIO_VIBTONE_EN1, GPIO_LEVEL_LOW);
 	gpio_free(GPIO_VIBTONE_EN1);
 /* From Xiaomi end */
@@ -1361,9 +1311,9 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex,
 	VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes,
-	VibeInt8* pForceOutputBuffer)
+	VibeInt8 *pForceOutputBuffer)
 {
-	if(g_autotune_brake_enabled) {
+	if (g_autotune_brake_enabled) {
 		VibeInt8 force = pForceOutputBuffer[0];
 		if (force > 0 && g_lastForce <= 0) {
 			g_brake = false;
@@ -1388,7 +1338,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
 			if (pForceOutputBuffer[0] != 0) {
 				uForce = (pForceOutputBuffer[0] > 0)?(pForceOutputBuffer[0]):0;
 
-				// Added by Ken on 20130530
+
 				DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_SetSamples(%d)\n", uForce));
 
 				if (uForce > 126)
@@ -1397,7 +1347,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
 					uForce += 128;
 				pwm_duty_enable(vibdata.pwm_dev, uForce);
 			} else {
-				// Added by Ken on 20130530
+
 				DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_SetSamples(0)\n"));
 
 				pwm_duty_enable(vibdata.pwm_dev, 0);
@@ -1417,17 +1367,17 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
 		if (pForceOutputBuffer[0] != 0) {
 			uForce = (pForceOutputBuffer[0] > 0) ? (pForceOutputBuffer[0]) : 0;
 
-			// Added by Ken on 20130530
+
 			DbgOut((DBL_VERBOSE, "SetSamples(%d)\n", uForce));
 
-			if(uForce > 126)
+			if (uForce > 126)
 				uForce = 256;
 			else
 				uForce += 128;
 			pwm_duty_enable(vibdata.pwm_dev, uForce);
 		} else {
 
-			// Added by Ken on 20130530
+
 			DbgOut((DBL_VERBOSE, "SetSamples(0)\n"));
 
 			pwm_duty_enable(vibdata.pwm_dev, 0);
@@ -1448,10 +1398,10 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetFrequency(VibeUInt8 nActuatorInd
 	VibeUInt16 nFrequencyParameterID,
 	VibeUInt32 nFrequencyParameterValue)
 {
-	if (nActuatorIndex != 0) return VIBE_S_SUCCESS;
+	if (nActuatorIndex != 0)
+	return VIBE_S_SUCCESS;
 
-	switch (nFrequencyParameterID)
-	{
+	switch (nFrequencyParameterID) {
 	case VIBE_KP_CFG_FREQUENCY_PARAM1:
 		/* Update frequency parameter 1 */
 		break;
@@ -1486,20 +1436,20 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, cha
 {
 	char szRevision[MAX_REVISION_STRING_SIZE];
 
-	if ((!szDevName) || (nSize < 1)) return VIBE_E_FAIL;
+	if ((!szDevName) || (nSize < 1))
+	return VIBE_E_FAIL;
 
 	DbgOut((DBL_VERBOSE, "ImmVibeSPI_Device_GetName.\n"));
 
-	switch (g_nDeviceID)
-	{
+	switch (g_nDeviceID) {
 	case DRV2605:
-		strncpy(szDevName, "DRV2605", nSize-1);
+		strlcpy(szDevName, "DRV2605", nSize-1);
 		break;
 	case DRV2604:
-		strncpy(szDevName, "DRV2604", nSize-1);
+		strlcpy(szDevName, "DRV2604", nSize-1);
 		break;
 	default:
-		strncpy(szDevName, "Unknown", nSize-1);
+		strlcpy(szDevName, "Unknown", nSize-1);
 		break;
 	}
 

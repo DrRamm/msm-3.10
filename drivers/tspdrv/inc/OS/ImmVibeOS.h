@@ -1,8 +1,8 @@
 /*
 ** =========================================================================
 ** Copyright (c) 2007-2010  Immersion Corporation.  All rights reserved.
-**                          Immersion Corporation Confidential and Proprietary
-** Copyright (C) 2015 XiaoMi, Inc.
+** Copyright (C) 2017 XiaoMi, Inc.
+** Immersion Corporation Confidential and Proprietary
 ** =========================================================================
 */
 /**

@@ -1,8 +1,8 @@
 /*
 ** =========================================================================
 ** Copyright (c) 2004-2011  Immersion Corporation.  All rights reserved.
-**                          Immersion Corporation Confidential and Proprietary
-** Copyright (C) 2015 XiaoMi, Inc.
+** Copyright (C) 2017 XiaoMi, Inc.
+** Immersion Corporation Confidential and Proprietary
 **
 ** File:
 **     ImmVibeSPI.h
@@ -21,11 +21,11 @@ extern "C" {
 #endif /* __cplusplus */
 
 #ifndef IMMVIBESPIAPI
-    #if defined(WIN32)
-        #define IMMVIBESPIAPI __declspec(dllimport)
-    #else
-        #define IMMVIBESPIAPI extern
-    #endif
+	#if defined(WIN32)
+		#define IMMVIBESPIAPI __declspec(dllimport)
+	#else
+		#define IMMVIBESPIAPI extern
+	#endif
 #endif
 
 /*
@@ -76,7 +76,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, cha
 /*
 ** Called to send output force samples
 */
-IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8* pForceOutputBuffer);
+IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8 *pForceOutputBuffer);
 
 /*
 ** Called to set output frequency parameters

@@ -8,7 +8,7 @@
 **     to control PWM duty cycle, amp enable/disable, save IVT file, etc...
 **
 ** Portions Copyright (c) 2012 Immersion Corporation. All Rights Reserved.
-** Copyright (C) 2015 XiaoMi, Inc.
+ * Copyright (C) 2017 XiaoMi, Inc.
 **
 ** This file contains Original Code and/or Modifications of Original Code
 ** as defined in and that are subject to the GNU Public License v2 -
@@ -366,22 +366,22 @@
 #if (LRA_SELECTION == LRA_SEMCO1036)
 #define LRA_RATED_VOLTAGE               0x4E
 #define LRA_OVERDRIVE_CLAMP_VOLTAGE     0xA4
-#define LRA_RTP_STRENGTH                0x7F // 100% of rated voltage (closed loop)
+#define LRA_RTP_STRENGTH                0x7F
 
 #elif (LRA_SELECTION == LRA_SEMCO0934)
 #define LRA_RATED_VOLTAGE               0x51
 #define LRA_OVERDRIVE_CLAMP_VOLTAGE     0x72
-#define LRA_RTP_STRENGTH                0x7F // 100% of rated voltage (closed loop)
+#define LRA_RTP_STRENGTH                0x7F
 
 #elif (LRA_SELECTION == LRA_BLUECOM)
 #define LRA_RATED_VOLTAGE               0x53
 #define LRA_OVERDRIVE_CLAMP_VOLTAGE     0xA4
-#define LRA_RTP_STRENGTH                0x7F // 100% of rated voltage (closed loop)
+#define LRA_RTP_STRENGTH                0x7F
 
 #else
 #define LRA_RATED_VOLTAGE                       0x60
 #define LRA_OVERDRIVE_CLAMP_VOLTAGE             0x9E
-#define LRA_RTP_STRENGTH                0x7F // 100% of rated voltage (closed loop)
+#define LRA_RTP_STRENGTH                0x7F
 
 #endif
 
@@ -392,9 +392,9 @@
 #define REAL_TIME_PLAYBACK_CALIBRATION_STRENGTH 0x7F /* 100% of rated voltage (closed loop) */
 
 static int g_nDeviceID = -1;
-static struct i2c_client* g_pTheClient = NULL;
-static bool g_bAmpEnabled = false;
-static bool g_bNeedToRestartPlayBack = false;
+static struct i2c_client *g_pTheClient;
+static bool g_bAmpEnabled;
+static bool g_bNeedToRestartPlayBack;
 
 #define MAX_TIMEOUT 10000 /* 10s */
 #define PAT_MAX_LEN 256
@@ -427,13 +427,13 @@ static struct vibrator {
 
 	struct work_struct pat_work;
 	struct workqueue_struct *hap_wq;
-	signed char* pat;
+	signed char *pat;
 	int	pat_len;
 	int	pat_i;
 	int	pat_mode;
 } vibdata;
 
-static int device_id = 0;
+static int device_id;
 signed char pattern[PAT_MAX_LEN];
 
 static const unsigned char LRA_autocal_sequence[] = {
@@ -486,15 +486,14 @@ static const unsigned char LRA_init_sequence[] = {
 };
 #endif
 
-static void drv2604_write_reg_val(const unsigned char* data, unsigned int size)
+static void drv2604_write_reg_val(const unsigned char *data, unsigned int size)
 {
 	int i = 0;
 
 	if (size % 2 != 0)
 		return;
 
-	while (i < size)
-	{
+	while (i < size) {
 		/* From Xiaomi start */
 		pr_debug("drv2604 write 0x%02x, 0x%02x", data[i], data[i+1]);
 		/* From Xiaomi end */
@@ -505,8 +504,7 @@ static void drv2604_write_reg_val(const unsigned char* data, unsigned int size)
 
 static void drv2604_set_go_bit(char val)
 {
-	char go[] =
-	{
+	char go[] = {
 		GO_REG, val
 	};
 	drv2604_write_reg_val(go, sizeof(go));
@@ -514,8 +512,7 @@ static void drv2604_set_go_bit(char val)
 
 static unsigned char drv2604_read_reg(unsigned char reg)
 {
-/* From Xiaomi start */
-//	return i2c_smbus_read_byte_data(g_pTheClient, reg);
+
 
 	unsigned char data;
 	struct i2c_msg msgs[2];
@@ -539,7 +536,6 @@ static unsigned char drv2604_read_reg(unsigned char reg)
 	res = i2c_transfer(i2c_adap, msgs, 2);
 	pr_debug("drv2604 read addr:0x%x reg:0x%x data:0x%x res:%d", address, reg, data, res);
 	return data;
-/* From Xiaomi end */
 }
 
 static void drv2604_poll_go_bit(void)
@@ -550,8 +546,7 @@ static void drv2604_poll_go_bit(void)
 
 static void drv2604_set_rtp_val(char value)
 {
-	char rtp_val[] =
-	{
+	char rtp_val[] = {
 		REAL_TIME_PLAYBACK_REG, value
 	};
 	drv2604_write_reg_val(rtp_val, sizeof(rtp_val));
@@ -559,15 +554,13 @@ static void drv2604_set_rtp_val(char value)
 
 static void drv2604_change_mode(char mode)
 {
-	unsigned char tmp[] =
-	{
+	unsigned char tmp[] = {
 		MODE_REG, mode
 	};
 	drv2604_write_reg_val(tmp, sizeof(tmp));
-	usleep_range(1000,1200); /* Added by Xiaomi */
+	usleep_range(1000, 1200);
 }
 
-/* - Xiaomi - timed output interface -------------------------------------------------------------------------------- */
 #define YES 1
 #define NO  0
 
@@ -607,8 +600,7 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 
 		mode = drv2604_read_reg(MODE_REG) & DRV2604_MODE_MASK;
 		/* Only change the mode if not already in RTP mode; RTP input already set at init */
-		if (mode != MODE_REAL_TIME_PLAYBACK)
-		{
+		if (mode != MODE_REAL_TIME_PLAYBACK) {
 			drv2604_set_rtp_val(REAL_TIME_PLAYBACK_STRENGTH);
 			drv2604_change_mode(MODE_REAL_TIME_PLAYBACK);
 			vibrator_is_playing = YES;
@@ -619,8 +611,7 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 				value = MAX_TIMEOUT;
 			hrtimer_start(&vibdata.timer, ns_to_ktime((u64)value * NSEC_PER_MSEC), HRTIMER_MODE_REL);
 		}
-	}
-	else
+	} else
 		vibrator_off();
 
 	mutex_unlock(&vibdata.lock);
@@ -663,7 +654,7 @@ static void drv2604_pat_work(struct work_struct *work)
 			pwm_duty_enable(vibdata.pwm_dev, value);
 			msleep(time);
 		} else {
-			if ((time == 0) || (i+2 >= vibdata.pat_len )) { /* the end */
+			if ((time == 0) || (i+2 >= vibdata.pat_len)) { /* the end */
 				pwm_disable(vibdata.pwm_dev);
 				drv2604_change_mode(MODE_STANDBY);
 				pr_debug("drv2604 vib len:%d time:%d", vibdata.pat_len, time);
@@ -673,7 +664,7 @@ static void drv2604_pat_work(struct work_struct *work)
 				msleep(time);
 			}
 		}
-		pr_debug("%s: %d vib:%d time:%d value:%u",__func__, i, vibdata.pat[i], time, value);
+		pr_debug("%s: %d vib:%d time:%d value:%u", __func__, i, vibdata.pat[i], time, value);
 	}
 	wake_unlock(&vibdata.wklock);
 }
@@ -684,14 +675,14 @@ static ssize_t drv2604_write_pattern(struct file *filp, struct kobject *kobj,
 	mutex_lock(&vibdata.lock);
 	wake_lock(&vibdata.wklock);
 	pr_debug("%s count:%d [%d %d %d %d %d %d %d %d %d ]",
-		__func__, count, buffer[0], buffer[1], buffer[2], buffer[3],
-		buffer[4], buffer[5], buffer[6], buffer[7], buffer[8]);
+			__func__, count, buffer[0], buffer[1], buffer[2], buffer[3],
+			buffer[4], buffer[5], buffer[6], buffer[7], buffer[8]);
 
 	vibdata.pat_len = 0;
 	cancel_work_sync(&vibdata.pat_work);
 
 	memcpy(pattern, buffer, count);
-	pattern[count] = 0;	 // add 0 in end in case user forgot to disable
+	pattern[count] = 0;
 	pattern[count + 1] = 0;
 	vibdata.pat_mode = pattern[0];
 	vibdata.pat_len = count + 2;
@@ -705,8 +696,7 @@ static ssize_t drv2604_write_pattern(struct file *filp, struct kobject *kobj,
 	return 0;
 }
 
-static struct timed_output_dev to_dev =
-{
+static struct timed_output_dev to_dev = {
 	.name		= "vibrator",
 	.get_time	= vibrator_get_time,
 	.enable		= vibrator_enable,
@@ -721,10 +711,9 @@ static struct bin_attribute drv2604_bin_attrs = {
 	.size	= PAT_MAX_LEN + 1,
 };
 
-static int drv2604_probe(struct i2c_client* client, const struct i2c_device_id* id);
-static int drv2604_remove(struct i2c_client* client);
-static const struct i2c_device_id drv2604_id[] =
-{
+static int drv2604_probe(struct i2c_client *client, const struct i2c_device_id *id);
+static int drv2604_remove(struct i2c_client *client);
+static const struct i2c_device_id drv2604_id[] = {
 	{DRV2604_BOARD_NAME, 0},
 	{}
 };
@@ -733,26 +722,23 @@ static struct i2c_board_info info = {
 	I2C_BOARD_INFO(DRV2604_BOARD_NAME, DEVICE_ADDR),
 };
 
-static struct i2c_driver drv2604_driver =
-{
+static struct i2c_driver drv2604_driver = {
 	.probe = drv2604_probe,
 	.remove = drv2604_remove,
 	.id_table = drv2604_id,
-	.driver =
-	{
+	.driver = {
 		.name = DRV2604_BOARD_NAME,
 	},
 };
 
 /* From Xiaomi */
-static struct i2c_device_id drv2604_id_table[] =
-{
+static struct i2c_device_id drv2604_id_table[] = {
 	{ DRV2604_BOARD_NAME, 0 },
 	{}
 };
 MODULE_DEVICE_TABLE(i2c, drv2604_id_table);
 
-static int drv2604_probe(struct i2c_client* client, const struct i2c_device_id* id)
+static int drv2604_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	char status;
 #if SKIP_LRA_AUTOCAL == 0
@@ -801,17 +787,16 @@ static int drv2604_probe(struct i2c_client* client, const struct i2c_device_id* 
 
 	/* Read device ID */
 	g_nDeviceID = (status & DEV_ID_MASK);
-	switch (g_nDeviceID)
-	{
-		case DRV2605:
-			DbgOut((DBL_INFO, "drv2604 driver found: drv2605.\n"));
-			break;
-		case DRV2604:
-			DbgOut((DBL_INFO, "drv2604 driver found: drv2604.\n"));
-			break;
-		default:
-			DbgOut((DBL_INFO, "drv2604 driver found: unknown.\n"));
-			break;
+	switch (g_nDeviceID) {
+	case DRV2605:
+		DbgOut((DBL_INFO, "drv2604 driver found: drv2605.\n"));
+		break;
+	case DRV2604:
+		DbgOut((DBL_INFO, "drv2604 driver found: drv2604.\n"));
+		break;
+	default:
+		DbgOut((DBL_INFO, "drv2604 driver found: unknown.\n"));
+		break;
 	}
 
 	/* Put hardware in standby */
@@ -834,7 +819,7 @@ static int drv2604_probe(struct i2c_client* client, const struct i2c_device_id* 
 	return 0;
 }
 
-static int drv2604_remove(struct i2c_client* client)
+static int drv2604_remove(struct i2c_client *client)
 {
 	DbgOut((DBL_VERBOSE, "drv2604 on M3 removed.\n"));
 	return 0;
@@ -850,12 +835,11 @@ static struct platform_device *pisces_pwm_devices[]  = {
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex)
 {
-	if (g_bAmpEnabled)
-	{
+	if (g_bAmpEnabled) {
 		DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_AmpDisable.\n"));
 
 		/* Set the force to 0 */
-		//drv2604_set_rtp_val(0);
+
 		/* From Xiaomi start */
 		pwm_duty_enable(vibdata.pwm_dev, 0);
 		/* From Xiaomi end */
@@ -873,10 +857,9 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 {
-	if (!g_bAmpEnabled)
-	{
+	if (!g_bAmpEnabled) {
 		DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_AmpEnable.\n"));
-		// drv2604_change_mode(MODE_REAL_TIME_PLAYBACK);
+
 		/* From Xiaomi start */
 		pwm_duty_enable(vibdata.pwm_dev, 0);
 		drv2604_change_mode(MODE_PWM_OR_ANALOG_INPUT);
@@ -892,19 +875,17 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 {
-	struct i2c_adapter* adapter;
-	struct i2c_client* client;
+	struct i2c_adapter *adapter;
+	struct i2c_client *client;
 
 	DbgOut((DBL_VERBOSE, "ImmVibeSPI_ForceOut_Initialize.\n"));
 
 	g_bAmpEnabled = true;   /* to force ImmVibeSPI_ForceOut_AmpDisable disabling the amp */
 
-/* From Xiaomi start*/
 	if (gpio_request(GPIO_VIBTONE_EN1, "vibrator-en") < 0) {
 		printk(KERN_ALERT"drv2604: error requesting gpio\n");
 		return VIBE_E_FAIL;
 	}
-/* From Xiaomi end */
 
 	adapter = i2c_get_adapter(DEVICE_BUS);
 
@@ -927,9 +908,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 		return VIBE_E_FAIL;
 	}
 
-/* From Xiaomi start */
-	if (timed_output_dev_register(&to_dev) < 0)
-	{
+	if (timed_output_dev_register(&to_dev) < 0) {
 		printk(KERN_ALERT"drv2604: fail to create timed output dev\n");
 		gpio_direction_output(GPIO_VIBTONE_EN1, GPIO_LEVEL_LOW);
 		gpio_free(GPIO_VIBTONE_EN1);
@@ -956,7 +935,6 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 		dev_err(&client->dev, "%s: pwm request failed\n", __func__);
 
 	printk(KERN_ALERT"drv2604: initialized on M3\n");
-/* From Xiaomi end */
 
 	ImmVibeSPI_ForceOut_AmpDisable(0);
 
@@ -972,10 +950,8 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 
 	ImmVibeSPI_ForceOut_AmpDisable(0);
 
-/* From Xiaomi start */
 	gpio_direction_output(GPIO_VIBTONE_EN1, GPIO_LEVEL_LOW);
 	gpio_free(GPIO_VIBTONE_EN1);
-/* From Xiaomi end */
 
 	/* Remove TS5000 driver */
 	i2c_del_driver(&drv2604_driver);
@@ -989,16 +965,15 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 /*
 ** Called by the real-time loop to set the force
 */
-IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8* pForceOutputBuffer)
+IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8 *pForceOutputBuffer)
 {
 
-	// drv2604_set_rtp_val(pForceOutputBuffer[0]);
-	/* From Xiaomi start */
+
 	/* Xiaomi would like to use the PWM mode to change output level */
 	u32 uForce;
 	if (pForceOutputBuffer[0] != 0) {
 		uForce = (pForceOutputBuffer[0] > 0)?(pForceOutputBuffer[0]):0;
-		if(uForce > 126)
+		if (uForce > 126)
 			uForce = 256;
 		else
 			uForce += 128;
@@ -1006,7 +981,6 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
 	} else {
 		pwm_duty_enable(vibdata.pwm_dev, 0);
 	}
-	/* From Xiaomi end */
 
 	if (g_bNeedToRestartPlayBack)
 		drv2604_set_go_bit(GO);
@@ -1021,33 +995,33 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetFrequency(VibeUInt8 nActuatorIndex, VibeUInt16 nFrequencyParameterID, VibeUInt32 nFrequencyParameterValue)
 {
-	if (nActuatorIndex != 0) return VIBE_S_SUCCESS;
+	if (nActuatorIndex != 0)
+	return VIBE_S_SUCCESS;
 
-	switch (nFrequencyParameterID)
-	{
-		case VIBE_KP_CFG_FREQUENCY_PARAM1:
-			/* Update frequency parameter 1 */
-			break;
+	switch (nFrequencyParameterID) {
+	case VIBE_KP_CFG_FREQUENCY_PARAM1:
+		/* Update frequency parameter 1 */
+		break;
 
-		case VIBE_KP_CFG_FREQUENCY_PARAM2:
-			/* Update frequency parameter 2 */
-			break;
+	case VIBE_KP_CFG_FREQUENCY_PARAM2:
+		/* Update frequency parameter 2 */
+		break;
 
-		case VIBE_KP_CFG_FREQUENCY_PARAM3:
-			/* Update frequency parameter 3 */
-			break;
+	case VIBE_KP_CFG_FREQUENCY_PARAM3:
+		/* Update frequency parameter 3 */
+		break;
 
-		case VIBE_KP_CFG_FREQUENCY_PARAM4:
-			/* Update frequency parameter 4 */
-			break;
+	case VIBE_KP_CFG_FREQUENCY_PARAM4:
+		/* Update frequency parameter 4 */
+		break;
 
-		case VIBE_KP_CFG_FREQUENCY_PARAM5:
-			/* Update frequency parameter 5 */
-			break;
+	case VIBE_KP_CFG_FREQUENCY_PARAM5:
+		/* Update frequency parameter 5 */
+		break;
 
-		case VIBE_KP_CFG_FREQUENCY_PARAM6:
-			/* Update frequency parameter 6 */
-			break;
+	case VIBE_KP_CFG_FREQUENCY_PARAM6:
+		/* Update frequency parameter 6 */
+		break;
 	}
 	return VIBE_S_SUCCESS;
 }
@@ -1057,21 +1031,21 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetFrequency(VibeUInt8 nActuatorInd
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, char *szDevName, int nSize)
 {
-	if ((!szDevName) || (nSize < 1)) return VIBE_E_FAIL;
+	if ((!szDevName) || (nSize < 1))
+	return VIBE_E_FAIL;
 
 	DbgOut((DBL_VERBOSE, "ImmVibeSPI_Device_GetName.\n"));
 
-	switch (g_nDeviceID)
-	{
-		case DRV2605:
-			strncpy(szDevName, "DRV2605", nSize-1);
-			break;
-		case DRV2604:
-			strncpy(szDevName, "DRV2604", nSize-1);
-			break;
-		default:
-			strncpy(szDevName, "Unknown", nSize-1);
-			break;
+	switch (g_nDeviceID) {
+	case DRV2605:
+		strlcpy(szDevName, "DRV2605", nSize-1);
+		break;
+	case DRV2604:
+		strlcpy(szDevName, "DRV2604", nSize-1);
+		break;
+	default:
+		strlcpy(szDevName, "Unknown", nSize-1);
+		break;
 	}
 
 	szDevName[nSize - 1] = '\0'; /* make sure the string is NULL terminated */
