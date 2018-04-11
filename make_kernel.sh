@@ -33,9 +33,9 @@ clear
 ###########################################################################
 # Resources
 THREAD="-j12"
-KERNEL="zImage"
-DTBIMAGE="dt.img"
-DEFCONFIG="virgo_defconfig"
+KERNEL="zImage-dtb"
+DTBIMAGE="miui_boot.img-dt"
+DEFCONFIG="cancro_defconfig"
 device="cancro"
 CURR_DIR=`pwd`
 COMPILER="$CURR_DIR/../arm-linux-androideabi-4.9/bin"
@@ -94,7 +94,7 @@ ZIMAGE_DIR="$KERNEL_DIR/arch/arm/boot"
 
 function make_dtb {
 		cp -vr $ZIMAGE_DIR/$KERNEL $REPACK_DIR/zImage
-		$DTBTOOL_DIR/dtbToolCM -2 -o $REPACK_DIR/$DTBIMAGE -s 2048 -p scripts/dtc/ arch/arm/boot/
+		$DTBTOOL_DIR/dtbToolCM -s 2048 -2 arch/arm/boot/dts/ -p scripts/dtc/ -o $REPACK_DIR/$DTBIMAGE
 
 }
 function clean_all {
@@ -164,7 +164,7 @@ case "$dchoice" in
 		if [ -e "arch/arm/boot/zImage" ]; then
 		make_dtb		
 		copy_modules
-		make_zip
+		#make_zip
 		else
 		echo -e "${bldred}"
 		echo "Kernel Compilation failed, zImage not found"
@@ -177,7 +177,7 @@ case "$dchoice" in
 		if [ -e "arch/arm/boot/zImage" ]; then
 		make_dtb		
 		copy_modules
-		make_zip
+		#make_zip
 		else
 		echo -e "${bldred}"
 		echo "zImage not found"
