@@ -33,8 +33,8 @@ clear
 ###########################################################################
 # Resources
 THREAD="-j12"
-KERNEL="zImage-dtb"
-DTBIMAGE="miui_boot.img-dt"
+KERNEL="zImage"
+DTBIMAGE="dt.img"
 DEFCONFIG="cancro_defconfig"
 device="cancro"
 CURR_DIR=`pwd`
@@ -94,8 +94,7 @@ ZIMAGE_DIR="$KERNEL_DIR/arch/arm/boot"
 
 function make_dtb {
 		cp -vr $ZIMAGE_DIR/$KERNEL $REPACK_DIR/zImage
-		$DTBTOOL_DIR/dtbToolCM -s 2048 -2 arch/arm/boot/dts/ -p scripts/dtc/ -o $REPACK_DIR/$DTBIMAGE
-
+		$DTBTOOL_DIR/dtbToolCM -s 2048 -d "qcom,msm-id = <" -2 arch/arm/boot/dts/ -p /usr/bin/ arch/arm/boot/ -o $REPACK_DIR/$DTBIMAGE
 }
 function clean_all {
 		make clean && make mrproper
@@ -107,10 +106,15 @@ function make_kernel {
 		make $THREAD
 		cp -vr $ZIMAGE_DIR/$KERNEL $REPACK_DIR/zImage		
 }
-
+function prepare_zip {
+		cd $REPACK_DIR
+		rm -rf *.zip
+		cp -r $REPACK_DIR/../zip/* ./
+		cd $KERNEL_DIR
+}
 function make_zip {
 		cd $REPACK_DIR
-		zip -r CANCRO-$KERNEL_TYPE-$(date +%d-%m_%H%M).zip *
+		zip -r9 CANCRO-$(date +%d-%m_%H%M).zip *
 }
 
 function copy_modules {
@@ -160,11 +164,12 @@ echo -e "${restore}"
 do
 case "$dchoice" in
 	y|Y)
+		prepare_zip
 		make_kernel
 		if [ -e "arch/arm/boot/zImage" ]; then
 		make_dtb		
 		copy_modules
-		#make_zip
+		make_zip
 		else
 		echo -e "${bldred}"
 		echo "Kernel Compilation failed, zImage not found"
@@ -174,10 +179,11 @@ case "$dchoice" in
 		break
 		;;
 	n|N )
+		prepare_zip
 		if [ -e "arch/arm/boot/zImage" ]; then
 		make_dtb		
 		copy_modules
-		#make_zip
+		make_zip
 		else
 		echo -e "${bldred}"
 		echo "zImage not found"
@@ -194,7 +200,7 @@ case "$dchoice" in
 esac
 done
 echo -e "${bldgrn}"
-echo "CANCRO-$KERNEL_TYPE-$(date +%d-%m_%H%M).zip"
+echo "CANCRO-$(date +%d-%m_%H%M).zip"
 echo -e "${bldred}"
 echo "################################################################################"
 echo -e "${bldgrn}"
