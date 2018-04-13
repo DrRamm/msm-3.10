@@ -33,12 +33,12 @@ clear
 ###########################################################################
 # Resources
 THREAD="-j12"
-KERNEL="zImage"
+KERNEL="zImage-dtb"
 DTBIMAGE="dt.img"
 DEFCONFIG="cancro_defconfig"
 device="cancro"
 CURR_DIR=`pwd`
-COMPILER="$CURR_DIR/../arm-linux-androideabi-4.9/bin"
+COMPILER="$CURR_DIR/../arm-eabi-6.0/bin"
 
 ###########################################################################
 # Kernel Details
@@ -48,7 +48,7 @@ ASSASIN_VER="$BASE_VER$VER"
 
 ###########################################################################
 # Vars
-export CROSS_COMPILE="$COMPILER/arm-linux-androideabi-"
+export CROSS_COMPILE="$COMPILER/arm-eabi-"
 export ARCH=arm
 export SUBARCH=arm
 export KBUILD_BUILD_USER="Dr"
@@ -83,7 +83,7 @@ done
 
 ###########################################################################
 # Paths
-STRIP=$COMPILER/arm-linux-androideabi-strip
+STRIP=$COMPILER/arm-eabi-strip
 KERNEL_DIR=`pwd`
 REPACK_DIR="$KERNEL_DIR/../ready_kernel/$KERNEL_TYPE"
 DTBTOOL_DIR="$KERNEL_DIR"
@@ -94,7 +94,7 @@ ZIMAGE_DIR="$KERNEL_DIR/arch/arm/boot"
 
 function make_dtb {
 		cp -vr $ZIMAGE_DIR/$KERNEL $REPACK_DIR/zImage
-		$DTBTOOL_DIR/dtbToolCM -s 2048 -d "qcom,msm-id = <" -2 arch/arm/boot/dts/ -p /usr/bin/ arch/arm/boot/ -o $REPACK_DIR/$DTBIMAGE
+		$DTBTOOL_DIR/dtbToolCM -s 2048 -2 arch/arm/boot/dts/ -o $REPACK_DIR/$DTBIMAGE
 }
 function clean_all {
 		make clean && make mrproper
@@ -167,7 +167,7 @@ case "$dchoice" in
 		prepare_zip
 		make_kernel
 		if [ -e "arch/arm/boot/zImage" ]; then
-		make_dtb		
+		#make_dtb		
 		copy_modules
 		make_zip
 		else
@@ -181,7 +181,7 @@ case "$dchoice" in
 	n|N )
 		prepare_zip
 		if [ -e "arch/arm/boot/zImage" ]; then
-		make_dtb		
+		#make_dtb		
 		copy_modules
 		make_zip
 		else
