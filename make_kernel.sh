@@ -108,7 +108,7 @@ function make_kernel {
 }
 function prepare_zip {
 		cd $REPACK_DIR
-		rm -rf *.zip
+		rm -rf *
 		cp -r $REPACK_DIR/../zip/* ./
 		cd $KERNEL_DIR
 }
@@ -168,7 +168,7 @@ case "$dchoice" in
 		make_kernel
 		if [ -e "arch/arm/boot/zImage" ]; then
 		#make_dtb		
-		copy_modules
+		#copy_modules
 		make_zip
 		else
 		echo -e "${bldred}"
@@ -182,7 +182,7 @@ case "$dchoice" in
 		prepare_zip
 		if [ -e "arch/arm/boot/zImage" ]; then
 		#make_dtb		
-		copy_modules
+		#copy_modules
 		make_zip
 		else
 		echo -e "${bldred}"
